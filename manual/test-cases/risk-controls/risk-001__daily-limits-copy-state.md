@@ -25,8 +25,8 @@ environment: [local-qa, qa]
 production_safe: false
 destructive: false
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/api/tests/risk/test_tc_risk_001_001_set_daily_loss_pct.spec.ts
+automation_status: Automated
+automation_ref: automation/api/tests/risk/risk-settings.spec.ts (TC-RISK-001-001)
 owner: unassigned
 status: Draft
 last_reviewed: 2026-07-30
@@ -55,8 +55,8 @@ environment: [local-qa, qa]
 production_safe: false
 destructive: false
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/api/tests/risk/test_tc_risk_001_002_pct_boundaries.spec.ts
+automation_status: Automated
+automation_ref: automation/api/tests/risk/risk-settings.spec.ts (TC-RISK-001-002)
 owner: unassigned
 status: Draft
 last_reviewed: 2026-07-30
@@ -138,8 +138,8 @@ environment: [local-qa]
 production_safe: false
 destructive: true
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/integration/test_tc_risk_001_005_max_account_pct.spec.ts
+automation_status: Automated
+automation_ref: automation/api/tests/risk/risk-settings.spec.ts (TC-RISK-001-005)
 owner: unassigned
 status: Draft
 last_reviewed: 2026-07-30
@@ -167,8 +167,8 @@ environment: [local-qa, qa]
 production_safe: false
 destructive: false
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/api/tests/risk/test_tc_risk_001_006_copy_toggle.spec.ts
+automation_status: Automated
+automation_ref: automation/api/tests/risk/risk-settings.spec.ts (TC-RISK-001-006)
 owner: unassigned
 status: Draft
 last_reviewed: 2026-07-30
@@ -194,8 +194,8 @@ environment: [local-qa]
 production_safe: false
 destructive: true
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/integration/test_tc_risk_001_007_daily_loss_autopause.spec.ts
+automation_status: Automated
+automation_ref: automation/api/tests/risk/risk-behavior.spec.ts (TC-RISK-001-007)
 owner: unassigned
 status: Draft
 last_reviewed: 2026-07-30
@@ -221,8 +221,8 @@ environment: [local-qa]
 production_safe: false
 destructive: true
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/integration/test_tc_risk_001_008_daily_profit_autopause.spec.ts
+automation_status: Automated
+automation_ref: automation/api/tests/risk/risk-behavior.spec.ts (TC-RISK-001-008)
 owner: unassigned
 status: Draft
 last_reviewed: 2026-07-30
@@ -248,8 +248,8 @@ environment: [local-qa]
 production_safe: false
 destructive: true
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/integration/test_tc_risk_001_009_next_day_resume.spec.ts
+automation_status: Automated
+automation_ref: automation/api/tests/risk/risk-behavior.spec.ts (TC-RISK-001-009)
 owner: unassigned
 status: Draft
 last_reviewed: 2026-07-30
@@ -276,8 +276,8 @@ environment: [local-qa, qa]
 production_safe: false
 destructive: false
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/api/tests/risk/test_tc_risk_001_010_reset_defaults.spec.ts
+automation_status: Automated
+automation_ref: automation/api/tests/risk/risk-settings.spec.ts (TC-RISK-001-010)
 owner: unassigned
 status: Draft
 last_reviewed: 2026-07-30
@@ -303,8 +303,8 @@ environment: [local-qa]
 production_safe: false
 destructive: false
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/integration/test_tc_risk_001_011_cache_invalidation.spec.ts
+automation_status: Automated
+automation_ref: automation/api/tests/risk/risk-settings.spec.ts (TC-RISK-001-011)
 owner: unassigned
 status: Draft
 last_reviewed: 2026-07-30

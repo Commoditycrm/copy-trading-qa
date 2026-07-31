@@ -16,6 +16,8 @@ export interface Provisioned {
   brokerAccountId: string;
   traderEmail: string;
   subs: FanoutSeed['subscribers'];
+  /** subscriber access tokens, aligned by index with `subs` (subscribers are registered + logged in). */
+  subAccess: string[];
   cleanup: () => void;
 }
 
@@ -29,9 +31,9 @@ export async function provisionFanout(
   const t = await auth.registerAndLogin(api, trader);
 
   const subUsers = subSpecs.map(() => makeUser('subscriber'));
+  const subAccess: string[] = [];
   for (const su of subUsers) {
-    const r = await auth.register(api, su);
-    if (r.status() !== 201) throw new Error(`subscriber register failed ${r.status()}: ${await r.text()}`);
+    subAccess.push((await auth.registerAndLogin(api, su)).access);
   }
 
   const specs: SubSpec[] = subUsers.map((su, i) => ({ ...(subSpecs[i] as Omit<SubSpec, 'email'>), email: su.email }));
@@ -44,6 +46,7 @@ export async function provisionFanout(
     brokerAccountId: seed.trader_account_id,
     traderEmail: trader.email,
     subs: seed.subscribers,
+    subAccess,
     cleanup: () => {
       if (process.env.QA_KEEP_DATA === '1') return; // debugging: leave rows for inspection
       for (const e of emails) {

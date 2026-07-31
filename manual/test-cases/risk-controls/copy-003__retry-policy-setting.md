@@ -23,8 +23,8 @@ environment: [local-qa, qa]
 production_safe: false
 destructive: false
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/api/tests/risk/test_tc_copy_003_008_retry_policy_validation.spec.ts
+automation_status: Automated
+automation_ref: automation/api/tests/risk/risk-settings.spec.ts (TC-COPY-003-008)
 owner: unassigned
 status: Draft
 last_reviewed: 2026-07-30

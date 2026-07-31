@@ -22,8 +22,8 @@ environment: [local-qa, qa]
 production_safe: false
 destructive: false
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/api/tests/risk/test_tc_risk_003_001_position_tp.spec.ts
+automation_status: Automated
+automation_ref: automation/api/tests/risk/risk-settings.spec.ts (TC-RISK-003-001)
 owner: unassigned
 status: Draft
 last_reviewed: 2026-07-30
@@ -49,8 +49,8 @@ environment: [local-qa, qa]
 production_safe: false
 destructive: false
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/api/tests/risk/test_tc_risk_003_002_position_sl.spec.ts
+automation_status: Automated
+automation_ref: automation/api/tests/risk/risk-settings.spec.ts (TC-RISK-003-002)
 owner: unassigned
 status: Draft
 last_reviewed: 2026-07-30
@@ -76,8 +76,8 @@ environment: [local-qa, qa]
 production_safe: false
 destructive: false
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/api/tests/risk/test_tc_risk_003_003_copy_bracket_toggle.spec.ts
+automation_status: Automated
+automation_ref: automation/api/tests/risk/risk-settings.spec.ts (TC-RISK-003-003)
 owner: unassigned
 status: Draft
 last_reviewed: 2026-07-30
@@ -103,8 +103,8 @@ environment: [local-qa]
 production_safe: false
 destructive: true
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/integration/test_tc_risk_003_004_bracket_position_xor.spec.ts
+automation_status: Automated
+automation_ref: automation/api/tests/risk/risk-behavior.spec.ts (TC-RISK-003-004)
 owner: unassigned
 status: Draft
 last_reviewed: 2026-07-30
@@ -131,8 +131,8 @@ environment: [local-qa]
 production_safe: false
 destructive: true
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/integration/test_tc_risk_003_005_position_enforcement.spec.ts
+automation_status: Automated
+automation_ref: automation/api/tests/risk/risk-behavior.spec.ts (TC-RISK-003-005)
 owner: unassigned
 status: Draft
 last_reviewed: 2026-07-30

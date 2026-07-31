@@ -132,6 +132,9 @@ class Handler(BaseHTTPRequestHandler):
             if path == "/admin/event":
                 _run(rid)["events"].append({"ts": _now(), **body.get("event", {})})
                 return self._send(200, {"ok": True})
+            if path == "/admin/pnl-snapshot":
+                _run(rid).setdefault("pnl", {})[body["account_id"]] = body.get("snapshot")
+                return self._send(200, {"ok": True})
 
             # ── broker surface (in-container shim) ───────────────────────
             if path == "/broker/place":
@@ -172,6 +175,9 @@ class Handler(BaseHTTPRequestHandler):
                 return self._broker_get(rid, q)
             if u.path == "/broker/positions":
                 return self._broker_positions(rid, q)
+            if u.path == "/broker/pnl-snapshot":
+                r = _run(rid)
+                return self._send(200, {"snapshot": r.get("pnl", {}).get(q.get("account_id"))})
         return self._send(404, {"error": "unknown", "path": u.path})
 
     # ── broker decision logic ────────────────────────────────────────────

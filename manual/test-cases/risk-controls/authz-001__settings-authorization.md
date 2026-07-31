@@ -21,8 +21,8 @@ environment: [local-qa, qa]
 production_safe: false
 destructive: false
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/api/tests/authz/test_tc_authz_001_014_settings_require_subscriber.spec.ts
+automation_status: Automated
+automation_ref: automation/api/tests/risk/risk-authz.spec.ts (TC-AUTHZ-001-014)
 owner: unassigned
 status: Draft
 last_reviewed: 2026-07-30
@@ -48,8 +48,8 @@ environment: [local-qa, qa]
 production_safe: false
 destructive: false
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/api/tests/authz/test_tc_authz_001_015_settings_self_scoped.spec.ts
+automation_status: Automated
+automation_ref: automation/api/tests/risk/risk-authz.spec.ts (TC-AUTHZ-001-015)
 owner: unassigned
 status: Draft
 last_reviewed: 2026-07-30
@@ -75,8 +75,8 @@ environment: [local-qa, qa]
 production_safe: false
 destructive: false
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/api/tests/authz/test_tc_authz_001_016_follow_approval_gate.spec.ts
+automation_status: Automated
+automation_ref: automation/api/tests/risk/risk-authz.spec.ts (TC-AUTHZ-001-016)
 owner: unassigned
 status: Draft
 last_reviewed: 2026-07-30

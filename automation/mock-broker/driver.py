@@ -92,6 +92,57 @@ elif action == "fanout_order":
         db.commit()
         out["fanned"] = len(results) if results else 0
 
+elif action == "seed_pnl":
+    # Seed today's FIFO-realized P&L for a subscriber via a matched BUY→SELL pair of filled orders
+    # (no Fill rows needed — today_realized_pnl_bulk falls back to Order.filled_quantity/avg_price).
+    from datetime import timedelta
+    from decimal import Decimal
+    from app.models.order import Order, OrderStatus, OrderSide, OrderType, InstrumentType
+    uid = uuid.UUID(spec["user_id"]); acct = uuid.UUID(spec["account_id"])
+    qty = Decimal(str(spec["quantity"])); buy = Decimal(str(spec["buy_price"])); sell = Decimal(str(spec["sell_price"]))
+    now = datetime.now(timezone.utc)
+    with SessionLocal() as db:
+        def _o(side, price, when):
+            return Order(id=uuid.uuid4(), user_id=uid, broker_account_id=acct,
+                         instrument_type=InstrumentType.STOCK, symbol=spec.get("symbol", "PNLX"),
+                         side=side, order_type=OrderType.MARKET, quantity=qty,
+                         filled_quantity=qty, filled_avg_price=price, status=OrderStatus.FILLED,
+                         broker_order_id=f"seed-{uuid.uuid4().hex[:8]}", submitted_at=when, closed_at=when)
+        db.add(_o(OrderSide.BUY, buy, now - timedelta(minutes=2)))
+        db.add(_o(OrderSide.SELL, sell, now - timedelta(minutes=1)))
+        db.commit()
+    out["seeded_pnl"] = str((sell - buy) * qty)
+
+elif action == "enforce_tp_sl":
+    # Run the app's real per-position TP/SL enforcer using the mock adapter's positions.
+    from app.services import position_enforcer
+    with SessionLocal() as db:
+        closed = position_enforcer.enforce_position_tp_sl(db, uuid.UUID(spec["user_id"]), uuid.UUID(spec["account_id"]))
+        db.commit()
+        out["closed"] = [str(c) for c in (closed or [])]
+        out["closed_count"] = len(closed or [])
+
+elif action == "poller_enforce":
+    # Run the app's real per-subscriber poller tick (auto-resume + daily kill-switches + auto-liquidation).
+    from app.services import pnl_poller
+    from app.models.broker_account import BrokerAccount
+    with SessionLocal() as db:
+        acct = db.get(BrokerAccount, uuid.UUID(spec["account_id"]))
+        db.expunge(acct)
+    pnl_poller._enforce_one(acct)  # opens its own session
+    with SessionLocal() as db:
+        from app.models.settings import SubscriberSettings
+        ss = db.get(SubscriberSettings, acct.user_id)
+        out["copy_enabled"] = bool(ss.copy_enabled) if ss else None
+        out["auto_liquidated"] = ss.auto_liquidated_at is not None if ss else None
+
+elif action == "warm_subs_cache":
+    import asyncio
+    from app.services import cache as cache_svc
+    with SessionLocal() as db:
+        asyncio.run(cache_svc.get_subscribers_for_trader(db, uuid.UUID(spec["trader_id"])))
+    out["warmed"] = True
+
 elif action == "emit_event":
     from app.services import trade_listener
     coid = spec.get("client_order_id") or spec.get("order_id")

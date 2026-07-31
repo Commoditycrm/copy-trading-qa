@@ -226,6 +226,38 @@ export function appOriginatedMarkerSet(cfg: QaConfig, orderId: string): boolean 
   return redis(`EXISTS "order:app_originated:${orderId}"`) === '1';
 }
 
+/** Read a single subscriber_settings column as text ('' if null/absent). */
+export function subSetting(cfg: QaConfig, userId: string, col: string): string {
+  assertLocal(cfg);
+  return psql(`SELECT COALESCE(${col}::text,'') FROM subscriber_settings WHERE user_id='${userId}'`);
+}
+
+/** Set a subscriber_settings column to a raw SQL expression (e.g. backdate a stamp). LOCAL-ONLY. */
+export function setSubSettingRaw(cfg: QaConfig, userId: string, col: string, sqlExpr: string): void {
+  assertLocal(cfg);
+  psql(`UPDATE subscriber_settings SET ${col}=${sqlExpr} WHERE user_id='${userId}'`);
+}
+
+/** True while the per-trader subscriber cache snapshot is populated (cache:subs:<traderId>). */
+export function subscriberCacheExists(cfg: QaConfig, traderId: string): boolean {
+  assertLocal(cfg);
+  return redis(`EXISTS "cache:subs:${traderId}"`) === '1';
+}
+
+/** Count audit_logs rows for an action, optionally scoped to an actor (per-user isolation checks). */
+export function auditByActor(cfg: QaConfig, action: string, actorUserId?: string): number {
+  assertLocal(cfg);
+  const where = actorUserId ? `action='${action}' AND actor_user_id='${actorUserId}'` : `action='${action}'`;
+  return Number(psql(`SELECT count(*) FROM audit_logs WHERE ${where}`) || '0');
+}
+
+/** Count notifications for a user, optionally of a given type. */
+export function notifCount(cfg: QaConfig, userId: string, type?: string): number {
+  assertLocal(cfg);
+  const where = type ? `user_id='${userId}' AND type='${type}'` : `user_id='${userId}'`;
+  return Number(psql(`SELECT count(*) FROM notifications WHERE ${where}`) || '0');
+}
+
 /** Flip a trader's kill-switch (trading_enabled) — for the disabled-trading 409 path. */
 export function setTradingEnabled(cfg: QaConfig, traderEmail: string, enabled: boolean): void {
   assertLocal(cfg);

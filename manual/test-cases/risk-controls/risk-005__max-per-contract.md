@@ -24,8 +24,8 @@ environment: [local-qa, qa]
 production_safe: false
 destructive: false
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/api/tests/risk/test_tc_risk_005_001_accept.spec.ts
+automation_status: Automated
+automation_ref: automation/api/tests/risk/risk-settings.spec.ts (TC-RISK-005-001)
 owner: unassigned
 status: Draft
 last_reviewed: 2026-07-30
@@ -134,8 +134,8 @@ environment: [local-qa]
 production_safe: false
 destructive: false
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/api/tests/risk/test_tc_risk_005_005_no_cache_bust.spec.ts
+automation_status: Automated
+automation_ref: automation/api/tests/risk/risk-settings.spec.ts (TC-RISK-005-005)
 owner: unassigned
 status: Draft
 last_reviewed: 2026-07-30

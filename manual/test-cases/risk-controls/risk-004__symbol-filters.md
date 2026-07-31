@@ -22,8 +22,8 @@ environment: [local-qa]
 production_safe: false
 destructive: true
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/integration/test_tc_risk_004_001_exclude.spec.ts
+automation_status: Automated
+automation_ref: automation/api/tests/risk/risk-behavior.spec.ts (TC-RISK-004-001)
 owner: unassigned
 status: Draft
 last_reviewed: 2026-07-30
@@ -49,8 +49,8 @@ environment: [local-qa]
 production_safe: false
 destructive: true
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/integration/test_tc_risk_004_002_include.spec.ts
+automation_status: Automated
+automation_ref: automation/api/tests/risk/risk-behavior.spec.ts (TC-RISK-004-002)
 owner: unassigned
 status: Draft
 last_reviewed: 2026-07-30
@@ -76,8 +76,8 @@ environment: [local-qa]
 production_safe: false
 destructive: true
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/integration/test_tc_risk_004_003_conflict.spec.ts
+automation_status: Automated
+automation_ref: automation/api/tests/risk/risk-behavior.spec.ts (TC-RISK-004-003)
 owner: unassigned
 status: Draft
 last_reviewed: 2026-07-30
@@ -103,8 +103,8 @@ environment: [local-qa, qa]
 production_safe: false
 destructive: false
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/api/tests/risk/test_tc_risk_004_004_normalization.spec.ts
+automation_status: Automated
+automation_ref: automation/api/tests/risk/risk-settings.spec.ts (TC-RISK-004-004)
 owner: unassigned
 status: Draft
 last_reviewed: 2026-07-30

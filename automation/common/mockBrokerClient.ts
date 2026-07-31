@@ -37,6 +37,10 @@ export interface MockPosition {
   quantity: number | string; // signed: + long, − short
   instrument_type?: 'stock' | 'option';
   avg_entry_price?: number | string;
+  current_price?: number | string;
+  market_value?: number | string;
+  unrealized_pnl?: number | string; // drives the position TP/SL enforcer
+  cost_basis?: number | string; // pct = unrealized_pnl / abs(cost_basis) * 100
   option_strike?: number | string;
   option_right?: 'call' | 'put';
 }
@@ -167,6 +171,26 @@ export class MockBroker {
   /** Run the app's retry scheduler over one order (re-place a RETRY_PENDING child). */
   runRetry(orderId: string): any {
     return this.drive('run_retry', { order_id: orderId });
+  }
+  /** Seed today's FIFO-realized P&L for a subscriber (matched BUY→SELL); pnl = (sell-buy)*qty. */
+  seedPnl(userId: string, accountId: string, o: { symbol?: string; quantity: number; buy_price: number; sell_price: number }): { seeded_pnl: string } {
+    return this.drive('seed_pnl', { user_id: userId, account_id: accountId, ...o });
+  }
+  /** Run the app's real per-position TP/SL enforcer against the mock adapter's positions. */
+  enforcePositionTpSl(userId: string, accountId: string): { closed_count: number; closed: string[] } {
+    return this.drive('enforce_tp_sl', { user_id: userId, account_id: accountId });
+  }
+  /** Warm the per-trader subscriber cache (cache:subs:<trader>) via the app's own cache read. */
+  warmSubsCache(traderId: string): any {
+    return this.drive('warm_subs_cache', { trader_id: traderId });
+  }
+  /** Set the broker P&L snapshot the poller reads (equity/beginning_day_balance/todays_pl). */
+  setPnlSnapshot(accountId: string, snapshot: { todays_pl?: number; equity?: number; beginning_day_balance?: number; todays_realized?: number }): Promise<any> {
+    return admin('POST', '/admin/pnl-snapshot', { run_id: this.runId, account_id: accountId, snapshot });
+  }
+  /** Run the app's real poller tick for one subscriber account (auto-resume / kill-switch / liquidation). */
+  pollerEnforce(accountId: string): { copy_enabled: boolean | null; auto_liquidated: boolean | null } {
+    return this.drive('poller_enforce', { account_id: accountId });
   }
   /** Emit a broker order/fill event into the app's real listener handler (echo/duplicate/replay). */
   emitBrokerEvent(args: { trader_id: string; account_id: string; order_id?: string; client_order_id?: string; broker_order_id?: string; event?: string; status?: string; submitted_at?: string; symbol?: string; side?: string; quantity?: number | string }): any {
