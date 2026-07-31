@@ -1,0 +1,32 @@
+# PLACEHOLDER — PR gate. Trigger is workflow_dispatch only until the framework is installed
+# and a fake-broker QA stack is wired (see docs/TEST_PLAN.md §4). Do not enable `pull_request`
+# until then. No secrets referenced here.
+name: pr (placeholder)
+
+on:
+  workflow_dispatch: {}
+  # pull_request:            # ENABLE after framework install + QA stack wiring
+  #   branches: [ main ]
+
+jobs:
+  fast-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install (locked)
+        working-directory: automation
+        run: npm ci
+      - name: Typecheck
+        working-directory: automation
+        run: npm run typecheck
+      - name: Secret scan
+        run: echo "TODO: gitleaks detect --no-banner"
+      - name: Dependency audit
+        working-directory: automation
+        run: npm audit --audit-level=high
+      # - name: API fast + smoke (@api @smoke, fake broker)
+      #   working-directory: automation
+      #   run: npx playwright test --project=api --grep "@smoke|@fast"

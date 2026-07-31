@@ -1,0 +1,32 @@
+# PLACEHOLDER — Alpaca PAPER broker-contract suite. MANUAL ONLY (workflow_dispatch), disabled by
+# default. Never part of PR/nightly/RC automatic runs. Uses a dedicated PAPER account (no real money);
+# credentials are DevOps-owned secrets. Guarded by common/safety.assertPaperSuiteAllowed().
+name: broker-contract (placeholder, manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type RUN-PAPER to confirm manual paper-broker run'
+        required: true
+        default: ''
+
+jobs:
+  paper-contract:
+    if: ${{ github.event.inputs.confirm == 'RUN-PAPER' }}
+    runs-on: ubuntu-latest
+    environment: alpaca-paper       # gated; DevOps-owned paper creds
+    env:
+      BROKER_MODE: paper
+      PAPER_SUITE_AUTHORIZED: 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install (locked)
+        working-directory: automation
+        run: npm ci
+      - name: Paper contract validation (@paper @broker-contract)
+        working-directory: automation
+        run: echo "TODO: npx playwright test --grep '@broker-contract'"

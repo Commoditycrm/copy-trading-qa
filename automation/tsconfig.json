@@ -1,0 +1,24 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "lib": ["ES2022", "DOM"],
+    "types": ["node"],
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "verbatimModuleSyntax": false,
+    "baseUrl": ".",
+    "paths": {
+      "@common/*": ["common/*"]
+    },
+    "noEmit": true
+  },
+  "include": ["common/**/*.ts", "ui/**/*.ts", "api/**/*.ts", "smoke/**/*.ts", "*.ts"],
+  "exclude": ["node_modules", "reports", "contract", "performance"]
+}

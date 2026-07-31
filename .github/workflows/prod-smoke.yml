@@ -1,0 +1,31 @@
+# PLACEHOLDER — Production READ-ONLY smoke. Manual/dispatch only. NO writes, NO orders,
+# NO user/broker/config changes, NO seed/cleanup (enforced by common/safety.ts + global-setup).
+# Credentials and any ZAP authorization are owned by the DevOps/security lead and injected as
+# secrets — never stored in this repo.
+name: prod-smoke (placeholder)
+
+on:
+  workflow_dispatch: {}
+  # workflow_run:            # ENABLE as post-deploy hook once approved
+  #   workflows: [ "deploy" ]
+  #   types: [ completed ]
+
+jobs:
+  prod-read-only-smoke:
+    runs-on: ubuntu-latest
+    environment: production-smoke   # gated environment; DevOps-owned secrets
+    env:
+      QA_ENV: prod
+      BROKER_MODE: none
+      # PROD_BASE_URL / PROD_SMOKE_TOKEN injected from the gated environment's secrets.
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install (locked)
+        working-directory: automation
+        run: npm ci
+      - name: Read-only smoke (@prod-safe only)
+        working-directory: automation
+        run: echo "TODO: npx playwright test --project=prod-smoke --grep @prod-safe"

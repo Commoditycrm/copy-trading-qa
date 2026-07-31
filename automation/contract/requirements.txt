@@ -1,0 +1,6 @@
+# Python contract/fuzz tooling — run in a Python 3.12 venv (see DEPENDENCY_VERIFICATION_REPORT.md §5.4).
+# Do NOT install into the system Python 3.14. Create: python3.12 -m venv .venv && pip install -r requirements.txt
+# Re-run `pip-audit` after install; block on High/Critical.
+schemathesis==4.24.3
+pytest==9.1.1
+pip-audit==2.10.1

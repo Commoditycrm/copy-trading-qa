@@ -1,0 +1,42 @@
+# ── Secrets (NEVER commit) ───────────────────────────────────────────────
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+secrets/
+**/credentials*.json
+
+# ── Test outputs / evidence ──────────────────────────────────────────────
+reports/**
+!reports/.gitkeep
+allure-results/
+allure-report/
+playwright-report/
+test-results/
+*.har
+screenshots/
+videos/
+traces/
+*.log
+
+# ── Language / tooling caches ────────────────────────────────────────────
+__pycache__/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+node_modules/
+.playwright/
+*.pyc
+
+# ── Internal docs (kept local — not pushed) ──────────────────────────────
+docs/
+
+# ── OS / editor ──────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

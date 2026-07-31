@@ -1,0 +1,124 @@
+# Disposable LOCAL QA stack — localhost only, fake broker, no production credentials.
+# Build contexts point INTO the read-only application repo (Docker only READS them to build images;
+# it never modifies the app repo). Postgres/Redis are local throwaway services. `down -v` wipes all data.
+#
+# Services: db, redis, backend(web), worker(background), frontend.
+# Default `npm run local:up` brings up db/redis/backend/worker (what the API auth suite needs);
+# `npm run local:up:full` adds the frontend for UI E2E.
+
+name: copytrading-qa-local
+
+services:
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: qa
+      POSTGRES_PASSWORD: qa
+      POSTGRES_DB: copytrading_qa
+    # No host port: reached only over the internal compose network (db:5432). Avoids Windows
+    # reserved-port conflicts; nothing outside the stack needs Postgres.
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U qa -d copytrading_qa"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    tmpfs:
+      - /var/lib/postgresql/data   # ephemeral: data lives in RAM, gone on down (fully disposable)
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--requirepass", "qaredispass", "--save", "", "--appendonly", "no"]
+    # No host port: reached only over the internal compose network (redis:6379).
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "qaredispass", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  # TEST-ONLY controllable mock brokerage (QA-side asset; see automation/mock-broker/). Refuses to
+  # start unless APP_ENV=local-qa. Bound to the internal net + 127.0.0.1 only; makes no outbound calls.
+  mock-broker:
+    image: python:3.12-slim
+    environment:
+      APP_ENV: "local-qa"
+      MOCK_BROKER_PORT: "9099"
+    volumes:
+      - ../mock-broker/server.py:/srv/server.py:ro
+    command: ["python", "/srv/server.py"]
+    ports:
+      - "127.0.0.1:9099:9099"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:9099/health', timeout=3).status==200 else 1)"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  backend:
+    build:
+      context: ../../../copy-trading-app/backend
+    env_file:
+      - ./qa.env
+    environment:
+      RUN_BACKGROUND_WORKERS: "false"   # web tier
+      APP_ENV: "local-qa"               # harness marker (app ignores; guards read it via env)
+      MOCK_BROKER_URL: "http://mock-broker:9099"
+      HOME: /tmp
+    # Shadow the bundled latency-only fake adapter with the QA controllable shim — CONTAINER ONLY;
+    # the app repo file on disk is never touched.
+    volumes:
+      - ../mock-broker/qa_fake_broker.py:/app/app/brokers/fake.py:ro
+    command:
+      - sh
+      - -c
+      - alembic upgrade head && exec uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 1 --proxy-headers --forwarded-allow-ips=*
+    ports:
+      - "127.0.0.1:8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      mock-broker:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/api/health', timeout=3).status==200 else 1)"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+
+  worker:
+    build:
+      context: ../../../copy-trading-app/backend
+    env_file:
+      - ./qa.env
+    environment:
+      RUN_BACKGROUND_WORKERS: "true"    # background tier (never scale >1)
+      APP_ENV: "local-qa"
+      MOCK_BROKER_URL: "http://mock-broker:9099"
+      HOME: /tmp
+    volumes:
+      - ../mock-broker/qa_fake_broker.py:/app/app/brokers/fake.py:ro
+    command:
+      - sh
+      - -c
+      - exec uvicorn app.main:app --host 0.0.0.0 --port 8000
+    depends_on:
+      backend:
+        condition: service_healthy
+      mock-broker:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ../../../copy-trading-app/frontend
+    environment:
+      BACKEND_URL: http://backend:8000
+      HOME: /tmp
+      NEXT_TELEMETRY_DISABLED: "1"
+    ports:
+      - "127.0.0.1:3000:3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+    profiles: ["full"]                  # only started by `local:up:full`

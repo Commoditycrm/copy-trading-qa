@@ -1,0 +1,47 @@
+{
+  "name": "copy-trading-qa-automation",
+  "version": "0.1.0",
+  "private": true,
+  "description": "TypeScript + Playwright automation for the Copy Trading Platform QA (UI E2E + API black-box). Python (Schemathesis) lives under automation/contract.",
+  "type": "module",
+  "engines": {
+    "node": ">=22 <25"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "install:browsers": "playwright install chromium",
+    "local:up": "node local-stack/up.mjs",
+    "local:up:full": "node local-stack/up.mjs --full",
+    "local:health": "node local-stack/health.mjs",
+    "local:reset": "docker compose -f local-stack/docker-compose.qa.yml down -v && node local-stack/up.mjs",
+    "local:down": "docker compose -f local-stack/docker-compose.qa.yml down -v",
+    "test": "playwright test",
+    "test:api": "playwright test --project=api",
+    "test:ui": "playwright test --project=ui",
+    "test:auth": "playwright test --project=api --grep @auth",
+    "test:auth:headed": "playwright test --project=api --grep @auth --headed",
+    "test:auth:debug": "playwright test --project=api --grep @auth --debug",
+    "test:smoke": "playwright test --grep @smoke",
+    "test:prod-smoke": "playwright test --project=prod-smoke --grep @prod-safe",
+    "report:generate": "allure generate ./reports/allure-results --clean -o ./reports/allure-report",
+    "report:open": "allure open ./reports/allure-report",
+    "audit": "npm audit"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.62.0",
+    "@axe-core/playwright": "4.12.1",
+    "typescript": "5.9.3",
+    "@types/node": "24.13.3",
+    "allure-playwright": "3.10.2",
+    "allure-commandline": "2.43.0",
+    "@faker-js/faker": "10.5.0",
+    "jsonwebtoken": "9.0.3",
+    "@types/jsonwebtoken": "9.0.10",
+    "dotenv": "17.4.2",
+    "zod": "4.4.3",
+    "prettier": "3.9.6"
+  },
+  "//deferred": "eslint@9 + @typescript-eslint@8 deferred — transitive brace-expansion advisory GHSA-mh99-v99m-4gvg (dev-only). See docs/DEPENDENCY_VERIFICATION_REPORT.md §4. Code health uses `tsc --noEmit` + prettier until cleared."
+}
