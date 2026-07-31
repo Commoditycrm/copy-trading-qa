@@ -28,6 +28,14 @@ export const marketOrder = (symbol: string, quantity: number, side: 'buy' | 'sel
   quantity,
 });
 
+/** A limit BUY entry with TP/SL bracket prices (buy geometry: sl < limit < tp). */
+export const limitBracket = (
+  symbol: string, quantity: number, limit_price: number, take_profit_price: number, stop_loss_price: number,
+): PlaceOrder => ({
+  instrument_type: 'stock', symbol, side: 'buy', order_type: 'limit', quantity,
+  limit_price, take_profit_price, stop_loss_price,
+});
+
 export const placeOrder = (api: SafeApi, token: string, brokerAccountId: string, order: PlaceOrder): Promise<APIResponse> =>
   api.post(`/api/trades?${q({ broker_account_id: brokerAccountId })}`, { token, data: order });
 

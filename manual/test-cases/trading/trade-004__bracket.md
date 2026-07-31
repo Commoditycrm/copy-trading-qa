@@ -184,8 +184,8 @@ environment: [local-qa]
 production_safe: false
 destructive: true
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/integration/test_tc_copy_004_002_oco_sibling_cancel.spec.ts
+automation_status: Automated
+automation_ref: automation/api/tests/trading/bracket-oco.spec.ts (TC-COPY-004-002)
 owner: unassigned
 status: Draft
 last_reviewed: 2026-07-30

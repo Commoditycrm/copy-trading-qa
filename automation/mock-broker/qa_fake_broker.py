@@ -90,6 +90,7 @@ class FakeBrokerAdapter(BrokerAdapter):
                 "run_id": self._run, "account_id": self._acct, "client_order_id": coid,
                 "symbol": req.symbol, "side": getattr(req.side, "value", str(req.side)),
                 "quantity": str(req.quantity), "nonce": uuid.uuid4().hex,
+                "is_closing": bool(getattr(req, "is_closing", False)),
             })
         except (urllib.error.URLError, OSError):
             return self._legacy_place()

@@ -362,8 +362,8 @@ environment: [local-qa]
 production_safe: false
 destructive: true
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/integration/test_tc_copy_002_013_concurrent_close.spec.ts
+automation_status: Automated
+automation_ref: automation/api/tests/trading/concurrent-close.spec.ts (TC-COPY-002-013)
 owner: unassigned
 status: Draft
 last_reviewed: 2026-07-30

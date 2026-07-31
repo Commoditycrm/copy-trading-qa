@@ -159,8 +159,8 @@ environment: [local-qa]
 production_safe: false
 destructive: true
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/integration/test_tc_copy_001_006_isolation.spec.ts
+automation_status: Automated
+automation_ref: automation/api/tests/trading/multi-sub-isolation.spec.ts (TC-COPY-001-006)
 owner: unassigned
 status: Draft
 last_reviewed: 2026-07-30
@@ -215,8 +215,8 @@ environment: [local-qa]
 production_safe: false
 destructive: true
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/integration/test_tc_copy_001_008_bracket_parent_guard.spec.ts
+automation_status: Automated
+automation_ref: automation/api/tests/trading/bracket-oco.spec.ts (TC-COPY-001-008)
 owner: unassigned
 status: Draft
 last_reviewed: 2026-07-30

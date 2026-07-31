@@ -160,6 +160,12 @@ class Handler(BaseHTTPRequestHandler):
             if u.path == "/admin/events":
                 r = _run(rid, create=False) or _blank_run()
                 return self._send(200, {"events": r["events"]})
+            if u.path == "/admin/exit-call-count":
+                r = _run(rid, create=False) or _blank_run()
+                calls = [c for c in r["calls"] if c["method"] == "place" and c.get("is_closing")]
+                if q.get("account_id"):
+                    calls = [c for c in calls if c.get("account_id") == q["account_id"]]
+                return self._send(200, {"exit_calls": len(calls)})
             if u.path == "/health":
                 return self._send(200, {"ok": True})
             if u.path == "/broker/order":
@@ -178,7 +184,8 @@ class Handler(BaseHTTPRequestHandler):
         mode = directive.get("mode", "success")
         latency = r["latency"].get(acct, r["latency"].get("__global__", 0))
         call = {"ts": _now(), "method": "place", "account_id": acct, "broker_order_id": bod,
-                "client_order_id": coid, "outcome": mode, "latency_ms": latency}
+                "client_order_id": coid, "outcome": mode, "latency_ms": latency,
+                "is_closing": bool(body.get("is_closing"))}  # exit-call tagging (OCO / concurrent-close)
         r["calls"].append(call)
         if mode != "success":
             return self._send(200, {"action": "raise", "error_kind": mode, "reason": directive.get("reason"),
