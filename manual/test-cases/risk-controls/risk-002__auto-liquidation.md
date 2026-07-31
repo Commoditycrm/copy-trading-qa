@@ -21,8 +21,8 @@ environment: [local-qa, qa]
 production_safe: false
 destructive: false
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/api/tests/risk/test_tc_risk_002_001_set_floor.spec.ts
+automation_status: Automated
+automation_ref: automation/api/tests/risk/risk-settings.spec.ts (TC-RISK-002-001)
 owner: unassigned
 status: Draft
 last_reviewed: 2026-07-30
@@ -48,8 +48,8 @@ environment: [local-qa]
 production_safe: false
 destructive: true
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/integration/test_tc_risk_002_002_liquidation_trigger.spec.ts
+automation_status: Automated
+automation_ref: automation/api/tests/risk/risk-behavior.spec.ts (TC-RISK-002-002)
 owner: unassigned
 status: Draft
 last_reviewed: 2026-07-30
@@ -76,8 +76,8 @@ environment: [local-qa]
 production_safe: false
 destructive: true
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/integration/test_tc_risk_002_003_sticky_no_resume.spec.ts
+automation_status: Automated
+automation_ref: automation/api/tests/risk/risk-behavior.spec.ts (TC-RISK-002-003)
 owner: unassigned
 status: Draft
 last_reviewed: 2026-07-30
@@ -104,8 +104,8 @@ environment: [local-qa, qa]
 production_safe: false
 destructive: false
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/api/tests/risk/test_tc_risk_002_004_clear_floor_keeps_marker.spec.ts
+automation_status: Automated
+automation_ref: automation/api/tests/risk/risk-behavior.spec.ts (TC-RISK-002-004)
 owner: unassigned
 status: Draft
 last_reviewed: 2026-07-30

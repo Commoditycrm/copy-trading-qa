@@ -41,6 +41,18 @@ await mb.runConcurrentClose(() => closeOrder(...), 2);   // concurrent-close pro
 mb.setSubscriberScenario(subAcctId, 'reject');           // per-subscriber override (multi-sub isolation)
 ```
 
+## Risk controls (grey-box)
+```ts
+mb.seedPnl(subUserId, subAcctId, { symbol: 'PNLX', quantity: 10, buy_price: 100, sell_price: 90 }); // -100 realized
+await mb.setPnlSnapshot(subAcctId, { todays_pl: 150, beginning_day_balance: 1000, equity: 1150 });   // poller snapshot
+mb.pollerEnforce(subAcctId);        // runs pnl_poller._enforce_one: auto-resume / kill-switch / auto-liquidation
+mb.enforcePositionTpSl(subUserId, subAcctId);  // runs position_enforcer against mock get_positions
+mb.warmSubsCache(traderId);         // populate cache:subs:<trader> via the app's own read
+```
+Daily-limit auto-pause is driven at FANOUT time by seedPnl (FIFO fills) + a trader order; auto-resume /
+auto-liquidation are driven via pollerEnforce (the poller reads get_pnl_snapshot). See
+`docs/EXECUTION_SUMMARY_RISK.md`.
+
 ## Notes
 - Keying: place/positions by **account id**; order-status/cancel/fill by **order id**
   (`broker_order_id = mock-<order id>`). All configured **before** the app calls the broker.

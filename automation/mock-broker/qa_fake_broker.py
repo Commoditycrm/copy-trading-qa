@@ -130,6 +130,16 @@ class FakeBrokerAdapter(BrokerAdapter):
             raise Exception(r.get("reason") or "cancel failed")  # noqa: TRY002
         return bool(r.get("result", True))
 
+    def get_pnl_snapshot(self):
+        try:
+            r = _http("GET", "/broker/pnl-snapshot", query=f"?run_id={self._run}&account_id={self._acct}")
+        except (urllib.error.URLError, OSError):
+            return None
+        snap = r.get("snapshot")
+        if not snap:
+            return None
+        return {k: _dec(v) for k, v in snap.items()}
+
     def get_positions(self) -> list[BrokerPosition]:
         try:
             r = _http("GET", "/broker/positions", query=f"?run_id={self._run}&account_id={self._acct}")
