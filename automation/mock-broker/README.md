@@ -27,6 +27,20 @@ const n = await mb.callCount('place', brokerAccountId);       // broker-call-cou
 mb.emitBrokerEvent({ trader_id, account_id, client_order_id, event: 'new', status: 'new' });
 ```
 
+## Bracket / OCO (grey-box)
+```ts
+const res = await placeOrder(..., limitBracket('AAPL', 5, 100, 110, 90)); // entry with TP/SL
+await mb.configureBracketScenario(entryId, { quantity: 5, price: 100 });
+const { legs } = mb.emitEntryFill(accountId, entryId);   // fills entry → real emulator makes TP+SL
+mb.emulateBracketOnly(entryId);                          // idempotency (no fill-sync)
+const oco = mb.emitTakeProfitFill(tpLegId);              // OCO: cancels the SL sibling
+mb.emitDuplicateFill(tpLegId);                           // must NOT create a 2nd exit
+mb.fanoutOrder(legId);                                   // exercises the bracket-parent fanout guard
+await mb.getExitCallCount(accountId);                    // bounds exits reaching the broker
+await mb.runConcurrentClose(() => closeOrder(...), 2);   // concurrent-close protection
+mb.setSubscriberScenario(subAcctId, 'reject');           // per-subscriber override (multi-sub isolation)
+```
+
 ## Notes
 - Keying: place/positions by **account id**; order-status/cancel/fill by **order id**
   (`broker_order_id = mock-<order id>`). All configured **before** the app calls the broker.

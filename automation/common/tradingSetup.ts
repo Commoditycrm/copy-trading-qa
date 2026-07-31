@@ -160,6 +160,35 @@ export function subscriberPickedAtSet(cfg: QaConfig, orderId: string): boolean {
   return psql(`SELECT subscriber_picked_at IS NOT NULL FROM orders WHERE id='${orderId}'`) === 't';
 }
 
+/** Count a trader's real ENTRY parents (excludes copy-mirrors and bracket exit legs). */
+export function traderEntryCount(cfg: QaConfig, userId: string, symbol: string): number {
+  assertLocal(cfg);
+  return Number(psql(
+    `SELECT count(*) FROM orders WHERE user_id='${userId}' AND symbol='${symbol}' ` +
+      `AND parent_order_id IS NULL AND bracket_parent_id IS NULL`,
+  ) || '0');
+}
+
+/** Count bracket exit legs under an entry (bracket_parent_id = entryId). */
+export function bracketLegCount(cfg: QaConfig, entryId: string): number {
+  assertLocal(cfg);
+  return Number(psql(`SELECT count(*) FROM orders WHERE bracket_parent_id='${entryId}'`) || '0');
+}
+
+/** Count / sum a user's orders on one side for a symbol (concurrent-close bounds). */
+export function sideOrderCount(cfg: QaConfig, userId: string, symbol: string, side: 'buy' | 'sell'): number {
+  assertLocal(cfg);
+  return Number(psql(
+    `SELECT count(*) FROM orders WHERE user_id='${userId}' AND symbol='${symbol}' AND lower(side::text)='${side}'`,
+  ) || '0');
+}
+export function sideQtySum(cfg: QaConfig, userId: string, symbol: string, side: 'buy' | 'sell'): number {
+  assertLocal(cfg);
+  return Number(psql(
+    `SELECT COALESCE(sum(quantity),0) FROM orders WHERE user_id='${userId}' AND symbol='${symbol}' AND lower(side::text)='${side}'`,
+  ) || '0');
+}
+
 /** The most recent parent order id for a trader+symbol (empty if none). */
 export function latestParentOrderId(cfg: QaConfig, traderUserId: string, symbol: string): string {
   assertLocal(cfg);

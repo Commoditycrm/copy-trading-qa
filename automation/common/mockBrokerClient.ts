@@ -82,6 +82,11 @@ export class MockBroker {
     return admin('POST', '/admin/rate-limit', { run_id: this.runId, account_id: accountId });
   }
 
+  /** Per-subscriber scenario override (alias of setPlaceOrderResult, keyed by that sub's broker account). */
+  setSubscriberScenario(accountId: string, mode: PlaceMode, opts: { reason?: string } = {}): Promise<any> {
+    return this.setPlaceOrderResult(accountId, mode, opts);
+  }
+
   async getCallHistory(accountId?: string): Promise<CallRecord[]> {
     const q = `?run_id=${encodeURIComponent(this.runId)}${accountId ? `&account_id=${accountId}` : ''}`;
     return (await admin('GET', `/admin/call-history${q}`)).calls;
@@ -90,9 +95,17 @@ export class MockBroker {
     const q = `?run_id=${encodeURIComponent(this.runId)}${accountId ? `&account_id=${accountId}` : ''}`;
     return (await admin('GET', `/admin/order-history${q}`)).orders;
   }
+  async getEventHistory(): Promise<any[]> {
+    return (await admin('GET', `/admin/events?run_id=${encodeURIComponent(this.runId)}`)).events;
+  }
   /** count broker calls of a given method (optionally on one account). */
   async callCount(method: CallRecord['method'], accountId?: string): Promise<number> {
     return (await this.getCallHistory(accountId)).filter((c) => c.method === method).length;
+  }
+  /** count broker PLACE calls flagged is_closing (exits) — bounds the number of exits reaching the broker. */
+  async getExitCallCount(accountId?: string): Promise<number> {
+    const q = `?run_id=${encodeURIComponent(this.runId)}${accountId ? `&account_id=${accountId}` : ''}`;
+    return (await admin('GET', `/admin/exit-call-count${q}`)).exit_calls;
   }
 
   // ── grey-box: drive the app's real logic with the controllable adapter ──
@@ -110,6 +123,46 @@ export class MockBroker {
   /** Run the app's fills-sync poll for an account (get_order → DB), so configured fills land. */
   syncFills(accountId: string): any {
     return this.drive('refresh_fills', { account_id: accountId });
+  }
+
+  // ── bracket / OCO (grey-box: drives the app's real bracket_emulator) ──
+  /** Configure the entry's fill so a subsequent emitEntryFill fills it (status + qty + price). */
+  configureBracketScenario(entryOrderId: string, fill: { quantity: number | string; price: number | string }): Promise<any> {
+    return this.setOrderStatus(entryOrderId, 'filled', fill.quantity, fill.price);
+  }
+  /** Fill the entry, then run the real emulator → returns the created TP/SL legs. */
+  emitEntryFill(accountId: string, entryOrderId: string): { legs: Array<{ id: string; bracket_leg: string; status: string }> } {
+    this.syncFills(accountId);
+    return this.drive('emulate_bracket', { entry_order_id: entryOrderId });
+  }
+  /** Re-run the emulator only (no fill-sync) — used to prove idempotency without auto-filling live legs. */
+  emulateBracketOnly(entryOrderId: string): { legs: Array<{ id: string; bracket_leg: string; status: string }> } {
+    return this.drive('emulate_bracket', { entry_order_id: entryOrderId });
+  }
+  emitPartialFill(accountId: string, orderId: string, quantity: number | string, price: number | string): any {
+    return (async () => { await this.setOrderStatus(orderId, 'partially_filled', quantity, price); return this.syncFills(accountId); })();
+  }
+  emitFullFill(accountId: string, orderId: string, quantity: number | string, price: number | string): any {
+    return (async () => { await this.setOrderStatus(orderId, 'filled', quantity, price); return this.syncFills(accountId); })();
+  }
+  /** Fill a TP leg and run OCO sibling-cancel → returns sibling state. */
+  emitTakeProfitFill(tpLegId: string): { sibling_cancelled: boolean; legs: Array<{ id: string; bracket_leg: string; status: string }> } {
+    return this.drive('fill_leg_oco', { leg_order_id: tpLegId });
+  }
+  emitStopLossFill(slLegId: string): { sibling_cancelled: boolean; legs: Array<{ id: string; bracket_leg: string; status: string }> } {
+    return this.drive('fill_leg_oco', { leg_order_id: slLegId });
+  }
+  /** Re-emit a fill for an already-filled leg — must NOT create a second exit. */
+  emitDuplicateFill(legId: string): any {
+    return this.drive('fill_leg_oco', { leg_order_id: legId });
+  }
+  /** Drive the app's real fanout on one order (exercises the bracket-parent guard). Returns fanned count. */
+  fanoutOrder(orderId: string): { fanned: number } {
+    return this.drive('fanout_order', { order_id: orderId });
+  }
+  /** Run N concurrent close attempts (default 2) and await all. */
+  async runConcurrentClose<T>(fn: () => Promise<T>, n = 2): Promise<Array<T | null>> {
+    return Promise.all(Array.from({ length: n }, () => fn().catch(() => null)));
   }
   /** Run the app's retry scheduler over one order (re-place a RETRY_PENDING child). */
   runRetry(orderId: string): any {

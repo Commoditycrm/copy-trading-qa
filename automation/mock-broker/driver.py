@@ -52,6 +52,46 @@ elif action == "run_retry":
             out["order"] = {"id": str(o.id), "status": o.status.value, "is_closing": bool(o.is_closing),
                             "retry_count": o.retry_count}
 
+elif action == "emulate_bracket":
+    # Fill the entry, then run the app's real bracket emulator → TP/SL exit legs.
+    from app.services import bracket_emulator
+    from app.models.order import OrderStatus
+    with SessionLocal() as db:
+        entry = db.get(Order, uuid.UUID(spec["entry_order_id"]))
+        legs = bracket_emulator.emulate_bracket_exits(db, entry)
+        db.commit()
+        out["legs"] = [{"id": str(l.id), "bracket_leg": l.bracket_leg, "status": l.status.value,
+                        "parent": str(l.bracket_parent_id) if l.bracket_parent_id else None}
+                       for l in legs]
+
+elif action == "fill_leg_oco":
+    # Mark one bracket leg FILLED and run the OCO sibling-cancel.
+    from app.services import bracket_emulator
+    from app.models.order import OrderStatus
+    with SessionLocal() as db:
+        leg = db.get(Order, uuid.UUID(spec["leg_order_id"]))
+        leg.status = OrderStatus.FILLED
+        leg.filled_quantity = leg.quantity
+        leg.filled_avg_price = leg.limit_price or leg.stop_price
+        db.flush()
+        canceled = bracket_emulator.cancel_sibling_on_fill(db, leg)
+        db.commit()
+        rows = db.query(Order).filter(Order.bracket_parent_id == leg.bracket_parent_id).all()
+        out["sibling_cancelled"] = bool(canceled)
+        out["legs"] = [{"id": str(o.id), "bracket_leg": o.bracket_leg, "status": o.status.value} for o in rows]
+
+elif action == "fanout_order":
+    # Drive the app's real fanout on one order — exercises the bracket-parent guard.
+    import asyncio
+    from app.services import copy_engine
+    from app.models.user import User
+    with SessionLocal() as db:
+        order = db.get(Order, uuid.UUID(spec["order_id"]))
+        trader = db.get(User, order.user_id)
+        results = asyncio.run(copy_engine.fanout_async(db, order, trader))
+        db.commit()
+        out["fanned"] = len(results) if results else 0
+
 elif action == "emit_event":
     from app.services import trade_listener
     coid = spec.get("client_order_id") or spec.get("order_id")
