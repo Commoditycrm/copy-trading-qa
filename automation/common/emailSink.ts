@@ -22,6 +22,29 @@ function backendLogs(sinceSeconds = 120): string {
   }
 }
 
+/** Count email send-attempts to an address; the log-mode line is followed by the body (link) on the next
+ *  lines, so `contains` is matched within the ~600-char block after each `to=<address>` occurrence. */
+export function emailAttemptsTo(address: string, contains?: string): number {
+  const logs = backendLogs();
+  const needle = `to=${address}`;
+  let n = 0;
+  let from = 0;
+  for (;;) {
+    const i = logs.indexOf(needle, from);
+    if (i < 0) break;
+    from = i + needle.length;
+    const lineStart = logs.lastIndexOf('\n', i);
+    const line = logs.slice(lineStart + 1, i);
+    if (!line.includes('email:')) continue; // only the email log line, not other 'to=' occurrences
+    if (contains && !logs.slice(i, i + 600).includes(contains)) continue;
+    n += 1;
+  }
+  return n;
+}
+export function emailLoggedTo(address: string, contains?: string): boolean {
+  return emailAttemptsTo(address, contains) > 0;
+}
+
 /** Extract the newest token value from a `?token=<jwt>` occurrence in the backend logs. */
 export function latestTokenFromLogs(kind: 'reset-password' | 'verify-email' | 'any' = 'any'): string | null {
   const logs = backendLogs();

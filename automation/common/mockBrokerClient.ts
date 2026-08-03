@@ -185,6 +185,14 @@ export class MockBroker {
   warmSubsCache(traderId: string): any {
     return this.drive('warm_subs_cache', { trader_id: traderId });
   }
+  /** Publish a correlated SSE event onto a user's channel (for the SSE consumer tests). */
+  emitSse(userId: string, event: Record<string, unknown>): { published: number } {
+    return this.drive('emit_sse', { user_id: userId, event });
+  }
+  /** Publish many SSE events in a single call (avoids a docker-exec per event for volume/order tests). */
+  emitSseBurst(userId: string, events: Array<Record<string, unknown>>): { published: number } {
+    return this.drive('emit_sse', { user_id: userId, events });
+  }
   /** Set the broker P&L snapshot the poller reads (equity/beginning_day_balance/todays_pl). */
   setPnlSnapshot(accountId: string, snapshot: { todays_pl?: number; equity?: number; beginning_day_balance?: number; todays_realized?: number }): Promise<any> {
     return admin('POST', '/admin/pnl-snapshot', { run_id: this.runId, account_id: accountId, snapshot });
