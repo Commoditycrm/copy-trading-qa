@@ -27,6 +27,10 @@ export const refresh = (api: SafeApi, refresh_token: string): Promise<APIRespons
 export const me = (api: SafeApi, token: string): Promise<APIResponse> =>
   api.get('/api/auth/me', { token });
 
+/** PATCH /api/auth/me — self-scoped profile update (phone + SMS consent/category flags). */
+export const updateMe = (api: SafeApi, token: string, body: Record<string, unknown>): Promise<APIResponse> =>
+  api.patch('/api/auth/me', { token, data: body });
+
 export const forgotPassword = (api: SafeApi, email: string, clientIp?: string): Promise<APIResponse> =>
   api.post('/api/auth/forgot-password', { data: { email }, headers: xff(clientIp) });
 

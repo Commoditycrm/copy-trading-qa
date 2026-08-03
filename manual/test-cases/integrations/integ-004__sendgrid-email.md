@@ -24,8 +24,8 @@ environment: [local-qa]
 production_safe: false
 destructive: true
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/integration/test_tc_integ_004_001_register_email.spec.ts
+automation_status: Automated
+automation_ref: automation/api/tests/comms/email.spec.ts (TC-INTEG-004-001)
 owner: unassigned
 status: Draft
 last_reviewed: 2026-07-30
@@ -78,8 +78,8 @@ environment: [local-qa]
 production_safe: false
 destructive: false
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/integration/test_tc_integ_004_003_reset_email.spec.ts
+automation_status: Automated
+automation_ref: automation/api/tests/comms/email.spec.ts (TC-INTEG-004-003)
 owner: unassigned
 status: Draft
 last_reviewed: 2026-07-30
@@ -105,8 +105,8 @@ environment: [local-qa]
 production_safe: false
 destructive: false
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/integration/test_tc_integ_004_004_email_change.spec.ts
+automation_status: Automated
+automation_ref: automation/api/tests/comms/email.spec.ts (TC-INTEG-004-004)
 owner: unassigned
 status: Draft
 last_reviewed: 2026-07-30
@@ -132,8 +132,8 @@ environment: [local-qa]
 production_safe: false
 destructive: false
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/integration/test_tc_integ_004_005_follow_emails.spec.ts
+automation_status: Automated
+automation_ref: automation/api/tests/comms/email.spec.ts (TC-INTEG-004-005)
 owner: unassigned
 status: Draft
 last_reviewed: 2026-07-30
@@ -159,8 +159,8 @@ environment: [local-qa]
 production_safe: false
 destructive: false
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/integration/test_tc_integ_004_006_no_creds.spec.ts
+automation_status: Automated
+automation_ref: automation/api/tests/comms/email.spec.ts (TC-INTEG-004-006)
 owner: unassigned
 status: Draft
 last_reviewed: 2026-07-30
@@ -294,8 +294,8 @@ environment: [local-qa]
 production_safe: false
 destructive: false
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/integration/test_tc_integ_004_011_case_enumeration.spec.ts
+automation_status: Automated
+automation_ref: automation/api/tests/comms/email.spec.ts (TC-INTEG-004-011)
 owner: unassigned
 status: Draft
 last_reviewed: 2026-07-30
