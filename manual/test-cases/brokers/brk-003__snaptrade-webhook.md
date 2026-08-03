@@ -22,8 +22,8 @@ environment: [local-qa]
 production_safe: false
 destructive: true
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/integration/test_tc_brk_003_001_webhook_valid.spec.ts
+automation_status: Automated
+automation_ref: automation/api/tests/brokers/broker-integrations.spec.ts (TC-BRK-003-001)
 owner: unassigned
 status: Draft
 last_reviewed: 2026-07-30
@@ -50,8 +50,8 @@ production_safe: false
 destructive: true
 defect_status: Potential
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/integration/test_tc_brk_003_002_webhook_unauth_amplification.spec.ts
+automation_status: Automated
+automation_ref: automation/api/tests/brokers/broker-integrations.spec.ts (TC-BRK-003-002)
 owner: unassigned
 status: Draft
 last_reviewed: 2026-07-30
@@ -77,8 +77,8 @@ environment: [local-qa]
 production_safe: false
 destructive: false
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/api/tests/brokers/test_tc_brk_003_003_webhook_bad_payload.spec.ts
+automation_status: Automated
+automation_ref: automation/api/tests/brokers/broker-integrations.spec.ts (TC-BRK-003-003)
 owner: unassigned
 status: Draft
 last_reviewed: 2026-07-30

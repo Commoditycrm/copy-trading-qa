@@ -27,8 +27,8 @@ environment: [local-qa, qa]
 production_safe: false
 destructive: false
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/api/tests/brokers/test_tc_brk_001_001_list_brokers.spec.ts
+automation_status: Automated
+automation_ref: automation/api/tests/brokers/broker-integrations.spec.ts (TC-BRK-001-001)
 owner: unassigned
 status: Draft
 last_reviewed: 2026-07-30
@@ -114,8 +114,8 @@ environment: [local-qa]
 production_safe: false
 destructive: true
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/integration/test_tc_brk_001_004_disconnect.spec.ts
+automation_status: Automated
+automation_ref: automation/api/tests/brokers/broker-integrations.spec.ts (TC-BRK-001-004)
 owner: unassigned
 status: Draft
 last_reviewed: 2026-07-30
@@ -223,8 +223,8 @@ environment: [local-qa, qa]
 production_safe: false
 destructive: false
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/api/tests/brokers/test_tc_brk_004_001_gating_flags.spec.ts
+automation_status: Automated
+automation_ref: automation/api/tests/brokers/broker-integrations.spec.ts (TC-BRK-004-001)
 owner: unassigned
 status: Draft
 last_reviewed: 2026-07-30
@@ -278,8 +278,8 @@ environment: [local-qa, qa]
 production_safe: false
 destructive: false
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/api/tests/brokers/test_tc_brk_001_009_invalid_broker.spec.ts
+automation_status: Automated
+automation_ref: automation/api/tests/brokers/broker-integrations.spec.ts (TC-BRK-001-009)
 owner: unassigned
 status: Draft
 last_reviewed: 2026-07-30
@@ -305,8 +305,8 @@ environment: [local-qa, qa]
 production_safe: false
 destructive: false
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/api/tests/brokers/test_tc_brk_001_010_missing_fields.spec.ts
+automation_status: Automated
+automation_ref: automation/api/tests/brokers/broker-integrations.spec.ts (TC-BRK-001-010)
 owner: unassigned
 status: Draft
 last_reviewed: 2026-07-30
@@ -332,8 +332,8 @@ environment: [local-qa, qa]
 production_safe: false
 destructive: false
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/api/tests/brokers/test_tc_brk_001_011_malformed_creds.spec.ts
+automation_status: Automated
+automation_ref: automation/api/tests/brokers/broker-integrations.spec.ts (TC-BRK-001-011)
 owner: unassigned
 status: Draft
 last_reviewed: 2026-07-30
@@ -359,8 +359,8 @@ environment: [local-qa]
 production_safe: false
 destructive: true
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/integration/test_tc_brk_001_012_encryption_at_rest.spec.ts
+automation_status: Automated
+automation_ref: automation/api/tests/brokers/broker-integrations.spec.ts (TC-BRK-001-012)
 owner: unassigned
 status: Draft
 last_reviewed: 2026-07-30
@@ -386,8 +386,8 @@ environment: [local-qa, qa]
 production_safe: false
 destructive: false
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/api/tests/brokers/test_tc_brk_001_013_credential_redaction.spec.ts
+automation_status: Automated
+automation_ref: automation/api/tests/brokers/broker-integrations.spec.ts (TC-BRK-001-013)
 owner: unassigned
 status: Draft
 last_reviewed: 2026-07-30
@@ -549,8 +549,8 @@ environment: [local-qa, qa]
 production_safe: false
 destructive: false
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/api/tests/brokers/test_tc_authz_001_017_broker_ownership.spec.ts
+automation_status: Automated
+automation_ref: automation/api/tests/brokers/broker-integrations.spec.ts (TC-AUTHZ-001-017)
 owner: unassigned
 status: Draft
 last_reviewed: 2026-07-30
