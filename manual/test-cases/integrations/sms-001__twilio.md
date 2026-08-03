@@ -24,8 +24,8 @@ environment: [local-qa, qa]
 production_safe: false
 destructive: false
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/api/tests/integrations/test_tc_sms_001_002_valid_phone.spec.ts
+automation_status: Automated
+automation_ref: automation/api/tests/comms/comms.spec.ts (TC-SMS-001-002)
 owner: unassigned
 status: Draft
 last_reviewed: 2026-07-30
@@ -51,8 +51,8 @@ environment: [local-qa, qa]
 production_safe: false
 destructive: false
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/api/tests/integrations/test_tc_sms_001_003_invalid_phone.spec.ts
+automation_status: Automated
+automation_ref: automation/api/tests/comms/comms.spec.ts (TC-SMS-001-003)
 owner: unassigned
 status: Draft
 last_reviewed: 2026-07-30
@@ -78,8 +78,8 @@ environment: [local-qa]
 production_safe: false
 destructive: true
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/integration/test_tc_sms_001_004_consent.spec.ts
+automation_status: Automated
+automation_ref: automation/api/tests/comms/comms.spec.ts (TC-SMS-001-004)
 owner: unassigned
 status: Draft
 last_reviewed: 2026-07-30
@@ -132,8 +132,8 @@ environment: [local-qa]
 production_safe: false
 destructive: true
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/integration/test_tc_sms_001_006_alerts.spec.ts
+automation_status: Automated
+automation_ref: automation/api/tests/comms/comms.spec.ts (TC-SMS-001-006)
 owner: unassigned
 status: Draft
 last_reviewed: 2026-07-30

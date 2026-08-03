@@ -27,7 +27,8 @@ All three confirm baseline §27 items. All are behavior defects (no fix applied 
 
 | Ref | Finding | Confirming test | State |
 |---|---|---|---|
-| §24 | SSE token carried in URL query (logging exposure) | TC-NOTIF-001-018 | Potential |
+| §24 | SSE token carried in URL query (`GET /api/events?token=`) — access-log exposure risk. Behavior confirmed (EventSource can't set headers, so the token is structurally in the query), but **impact not runtime-confirmed** (no uvicorn access-log capture proving a leak). Kept **Potential** per policy. | TC-NOTIF-001-018 | Potential |
+| NOTIF-015 | Broker-error content in notifications/SMS is **truncated, not credential-scrubbed** (`copy.rejected` message = raw broker error `[:180]`; no sanitizer). No current path echoes a secret, but a broker that returned a secret in an error string would surface it. | TC-NOTIF-001-015 (manual) | Potential (redaction-by-truncation only; recommend a scrubber) |
 | §15.3 | Unauthenticated SnapTrade webhook / poll-amplification | TC-BRK-003-002 | Potential |
 | §17 | `max_per_contract` accepted/persisted but unenforced | TC-RISK-005-003 | Potential |
 | §27 | `is_closing` reset on transient retry (copy engine) | TC-COPY-003-007 | **Confirmed → DEF-COPY-001** (mock-broker reproduced ×2) |

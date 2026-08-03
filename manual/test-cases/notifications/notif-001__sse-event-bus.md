@@ -21,8 +21,8 @@ environment: [local-qa]
 production_safe: false
 destructive: true
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/integration/test_tc_notif_001_016_channel_isolation.spec.ts
+automation_status: Automated
+automation_ref: automation/api/tests/comms/sse.spec.ts (TC-NOTIF-001-016)
 owner: unassigned
 status: Draft
 last_reviewed: 2026-07-30
@@ -48,8 +48,8 @@ environment: [local-qa]
 production_safe: false
 destructive: false
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/integration/test_tc_notif_001_017_heartbeat.spec.ts
+automation_status: Automated
+automation_ref: automation/api/tests/comms/sse.spec.ts (TC-NOTIF-001-017)
 owner: unassigned
 status: Draft
 last_reviewed: 2026-07-30
@@ -76,8 +76,8 @@ production_safe: false
 destructive: false
 defect_status: Potential
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/api/tests/notifications/test_tc_notif_001_018_sse_auth.spec.ts
+automation_status: Automated
+automation_ref: automation/api/tests/comms/sse.spec.ts (TC-NOTIF-001-018)
 owner: unassigned
 status: Draft
 last_reviewed: 2026-07-30
@@ -157,8 +157,8 @@ environment: [local-qa]
 production_safe: false
 destructive: true
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/integration/test_tc_notif_001_021_schema_ordering.spec.ts
+automation_status: Automated
+automation_ref: automation/api/tests/comms/sse.spec.ts (TC-NOTIF-001-021)
 owner: unassigned
 status: Draft
 last_reviewed: 2026-07-30
@@ -184,8 +184,8 @@ environment: [local-qa]
 production_safe: false
 destructive: true
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/performance/PERF-NOTIF-001-001__sse-volume.js
+automation_status: Automated
+automation_ref: automation/api/tests/comms/sse.spec.ts (TC-NOTIF-001-022)
 owner: unassigned
 status: Draft
 last_reviewed: 2026-07-30

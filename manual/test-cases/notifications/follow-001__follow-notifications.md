@@ -21,8 +21,8 @@ environment: [local-qa, qa]
 production_safe: false
 destructive: false
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/api/tests/notifications/test_tc_follow_001_001_request_notification.spec.ts
+automation_status: Automated
+automation_ref: automation/api/tests/comms/comms.spec.ts (TC-FOLLOW-001-001)
 owner: unassigned
 status: Draft
 last_reviewed: 2026-07-30
@@ -48,8 +48,8 @@ environment: [local-qa, qa]
 production_safe: false
 destructive: false
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/api/tests/notifications/test_tc_follow_001_002_approve_notification.spec.ts
+automation_status: Automated
+automation_ref: automation/api/tests/comms/comms.spec.ts (TC-FOLLOW-001-002)
 owner: unassigned
 status: Draft
 last_reviewed: 2026-07-30
@@ -75,8 +75,8 @@ environment: [local-qa, qa]
 production_safe: false
 destructive: false
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/api/tests/notifications/test_tc_follow_001_003_reject_notification.spec.ts
+automation_status: Automated
+automation_ref: automation/api/tests/comms/comms.spec.ts (TC-FOLLOW-001-003)
 owner: unassigned
 status: Draft
 last_reviewed: 2026-07-30

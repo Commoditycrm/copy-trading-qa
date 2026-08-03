@@ -22,8 +22,8 @@ environment: [local-qa]
 production_safe: false
 destructive: true
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/integration/test_tc_notif_001_003_reject_notification.spec.ts
+automation_status: Automated
+automation_ref: automation/api/tests/comms/comms.spec.ts (TC-NOTIF-001-003)
 owner: unassigned
 status: Draft
 last_reviewed: 2026-07-30
@@ -76,8 +76,8 @@ environment: [local-qa]
 production_safe: false
 destructive: true
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/integration/test_tc_notif_001_005_auto_action_notifications.spec.ts
+automation_status: Automated
+automation_ref: automation/api/tests/comms/comms.spec.ts (TC-NOTIF-001-005)
 owner: unassigned
 status: Draft
 last_reviewed: 2026-07-30
@@ -103,8 +103,8 @@ environment: [local-qa, qa]
 production_safe: false
 destructive: false
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/api/tests/notifications/test_tc_notif_001_006_ownership.spec.ts
+automation_status: Automated
+automation_ref: automation/api/tests/comms/comms.spec.ts (TC-NOTIF-001-006)
 owner: unassigned
 status: Draft
 last_reviewed: 2026-07-30
@@ -130,8 +130,8 @@ environment: [local-qa, qa]
 production_safe: false
 destructive: false
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/api/tests/notifications/test_tc_notif_001_007_list.spec.ts
+automation_status: Automated
+automation_ref: automation/api/tests/comms/comms.spec.ts (TC-NOTIF-001-007)
 owner: unassigned
 status: Draft
 last_reviewed: 2026-07-30
@@ -157,8 +157,8 @@ environment: [local-qa, qa]
 production_safe: false
 destructive: false
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/api/tests/notifications/test_tc_notif_001_008_read.spec.ts
+automation_status: Automated
+automation_ref: automation/api/tests/comms/comms.spec.ts (TC-NOTIF-001-008)
 owner: unassigned
 status: Draft
 last_reviewed: 2026-07-30
@@ -184,8 +184,8 @@ environment: [local-qa]
 production_safe: false
 destructive: true
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/integration/test_tc_notif_001_009_sse_prepend.spec.ts
+automation_status: Automated
+automation_ref: automation/api/tests/comms/sse.spec.ts (TC-NOTIF-001-009)
 owner: unassigned
 status: Draft
 last_reviewed: 2026-07-30

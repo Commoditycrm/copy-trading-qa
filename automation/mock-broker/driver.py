@@ -238,6 +238,19 @@ elif action == "eod_tick":
     asyncio.run(eod_autoclose._tick())
     out["ticked"] = True
 
+elif action == "emit_sse":
+    # Publish one or many correlated SSE events onto the user's channel (events:user:<uid>) in one call.
+    from app.services import events
+    uid = uuid.UUID(spec["user_id"])
+    batch = spec.get("events")
+    if batch is not None:
+        for ev in batch:
+            events.publish(uid, ev)
+        out["published"] = len(batch)
+    else:
+        events.publish(uid, spec.get("event", {}))
+        out["published"] = 1
+
 elif action == "warm_subs_cache":
     import asyncio
     from app.services import cache as cache_svc
