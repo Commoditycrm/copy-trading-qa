@@ -204,6 +204,12 @@ export function childId(cfg: QaConfig, parentOrderId: string, userId: string): s
   return psql(`SELECT id FROM orders WHERE parent_order_id='${parentOrderId}' AND user_id='${userId}' LIMIT 1`);
 }
 
+/** Push an order's retry_at into the past so the LIVE worker retry scheduler picks it up next tick. */
+export function backdateRetryAt(cfg: QaConfig, orderId: string): void {
+  assertLocal(cfg);
+  psql(`UPDATE orders SET retry_at = now() - interval '1 minute' WHERE id='${orderId}'`);
+}
+
 /** Newest parent order for a trader+symbol other than `excludeId` — used to find a close/reverse order. */
 export function otherParentOrderId(cfg: QaConfig, traderUserId: string, symbol: string, excludeId: string): string {
   assertLocal(cfg);
@@ -256,6 +262,15 @@ export function notifCount(cfg: QaConfig, userId: string, type?: string): number
   assertLocal(cfg);
   const where = type ? `user_id='${userId}' AND type='${type}'` : `user_id='${userId}'`;
   return Number(psql(`SELECT count(*) FROM notifications WHERE ${where}`) || '0');
+}
+
+/** Insert a notification row with a backdated created_at (for the 30-day retention boundary test). */
+export function seedNotificationAge(cfg: QaConfig, userId: string, type: string, ageDays: number): void {
+  assertLocal(cfg);
+  psql(
+    `INSERT INTO notifications (id, user_id, type, message, created_at) ` +
+      `VALUES (gen_random_uuid(), '${userId}', '${type}', 'seeded', now() - interval '${Math.floor(ageDays)} days')`,
+  );
 }
 
 /** Read a broker_accounts column as text ('' if null/absent). */

@@ -15,7 +15,7 @@ import time
 import urllib.request
 import urllib.error
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timezone, date
 from decimal import Decimal
 
 from app.brokers.base import (
@@ -157,7 +157,7 @@ class FakeBrokerAdapter(BrokerAdapter):
                 market_value=_dec(p.get("market_value")),
                 unrealized_pnl=_dec(p.get("unrealized_pnl")),
                 cost_basis=_dec(p.get("cost_basis")),
-                option_expiry=None,
+                option_expiry=date.fromisoformat(p["option_expiry"]) if p.get("option_expiry") else None,
                 option_strike=_dec(p.get("option_strike")),
                 option_right=OptionRight(p["option_right"]) if p.get("option_right") else None,
             ))

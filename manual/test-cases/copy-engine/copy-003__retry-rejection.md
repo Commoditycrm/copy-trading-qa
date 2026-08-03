@@ -77,8 +77,8 @@ environment: [local-qa]
 production_safe: false
 destructive: true
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/integration/test_tc_copy_003_003_retry_exhaustion.spec.ts
+automation_status: Automated
+automation_ref: automation/api/tests/jobs/background-jobs.spec.ts (TC-COPY-003-003)
 owner: unassigned
 status: Draft
 last_reviewed: 2026-07-30

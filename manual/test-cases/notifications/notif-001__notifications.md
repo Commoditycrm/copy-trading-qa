@@ -292,8 +292,8 @@ environment: [local-qa]
 production_safe: false
 destructive: true
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/integration/test_tc_notif_001_013_retention.spec.ts
+automation_status: Automated
+automation_ref: automation/api/tests/jobs/background-jobs.spec.ts (TC-NOTIF-001-013)
 owner: unassigned
 status: Draft
 last_reviewed: 2026-07-30
