@@ -43,6 +43,7 @@ export interface MockPosition {
   cost_basis?: number | string; // pct = unrealized_pnl / abs(cost_basis) * 100
   option_strike?: number | string;
   option_right?: 'call' | 'put';
+  option_expiry?: string; // ISO date — set to today (ET) for a same-day-expiry (0DTE) position
 }
 
 export interface CallRecord {
@@ -113,11 +114,11 @@ export class MockBroker {
   }
 
   // ── grey-box: drive the app's real logic with the controllable adapter ──
-  private drive(action: string, args: object): any {
+  private drive(action: string, args: object, container: 'backend' | 'worker' = 'backend'): any {
     const spec = Buffer.from(JSON.stringify({ action, run_id: this.runId, ...args })).toString('base64');
-    execSync(`docker compose -f "${compose}" cp "${driver}" backend:/tmp/qa_driver.py`, { stdio: ['ignore', 'ignore', 'pipe'] });
+    execSync(`docker compose -f "${compose}" cp "${driver}" ${container}:/tmp/qa_driver.py`, { stdio: ['ignore', 'ignore', 'pipe'] });
     const out = execSync(
-      `docker compose -f "${compose}" exec -T -e PYTHONPATH=/app -e DRIVER_SPEC_B64=${spec} backend python /tmp/qa_driver.py`,
+      `docker compose -f "${compose}" exec -T -e PYTHONPATH=/app -e DRIVER_SPEC_B64=${spec} ${container} python /tmp/qa_driver.py`,
       { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] },
     ).trim();
     const line = out.split('\n').filter(Boolean).pop() || '{}';
@@ -191,6 +192,40 @@ export class MockBroker {
   /** Run the app's real poller tick for one subscriber account (auto-resume / kill-switch / liquidation). */
   pollerEnforce(accountId: string): { copy_enabled: boolean | null; auto_liquidated: boolean | null } {
     return this.drive('poller_enforce', { account_id: accountId });
+  }
+
+  // ── background jobs / recovery (grey-box) ──
+  /** One poll pass over several accounts (crash-isolated per account). Returns each account's state. */
+  pollerPass(accountIds: string[]): { accounts: Record<string, { copy_enabled: boolean | null; auto_liquidated: boolean | null; paused: boolean | null }> } {
+    return this.drive('poller_pass', { account_ids: accountIds });
+  }
+  /** Worker-boot crash recovery: replay orphaned PENDING child orders. */
+  recoverySweep(): { recovered: number } {
+    return this.drive('recovery_sweep', {});
+  }
+  /** Seed a PENDING mirror child old enough for recovery to replay it. */
+  seedPendingChild(userId: string, accountId: string, parentOrderId: string, opts: { symbol?: string; quantity?: number } = {}): { child_id: string } {
+    return this.drive('seed_pending_child', { user_id: userId, account_id: accountId, parent_order_id: parentOrderId, ...opts });
+  }
+  /** Record (or dedup) the day-start equity snapshot for an account. Returns the row count for that account. */
+  dayStartEquity(accountId: string, equity: number, utcDate?: string): { value: string; rows: number } {
+    return this.drive('day_start_equity', { account_id: accountId, equity, utc_date: utcDate });
+  }
+  /** Run the app's position reconciler for one account (dry-run or apply). Returns synthetic-close count. */
+  reconcilePosition(accountId: string, apply: boolean): { synthetic_closes: number } {
+    return this.drive('reconcile_position', { account_id: accountId, apply });
+  }
+  /** Read the retry scheduler heartbeat status from the WORKER process (where it runs). */
+  retryHeartbeat(): { heartbeat: { running: boolean; healthy: boolean; last_run_at: string | null; seconds_since: number | null } } {
+    return this.drive('retry_heartbeat', {}, 'worker');
+  }
+  /** Create a notification via the app (triggers the inline 30-day retention purge for that user). */
+  createNotif(userId: string, type: string, message = 'qa'): { created: boolean } {
+    return this.drive('create_notif', { user_id: userId, type, message });
+  }
+  /** Run the EOD auto-close tick with a QA-injected ET clock (driver rebinds market_hours.now_et). */
+  eodTick(frozenEt: string): { ticked: boolean } {
+    return this.drive('eod_tick', { frozen_et: frozenEt });
   }
   /** Emit a broker order/fill event into the app's real listener handler (echo/duplicate/replay). */
   emitBrokerEvent(args: { trader_id: string; account_id: string; order_id?: string; client_order_id?: string; broker_order_id?: string; event?: string; status?: string; submitted_at?: string; symbol?: string; side?: string; quantity?: number | string }): any {

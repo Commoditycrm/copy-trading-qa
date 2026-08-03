@@ -105,8 +105,8 @@ environment: [local-qa]
 production_safe: false
 destructive: true
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/integration/test_tc_job_007_004_account_isolation.spec.ts
+automation_status: Automated
+automation_ref: automation/api/tests/jobs/background-jobs.spec.ts (TC-JOB-007-004)
 owner: unassigned
 status: Draft
 last_reviewed: 2026-07-30
@@ -213,8 +213,8 @@ environment: [local-qa]
 production_safe: false
 destructive: true
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/integration/test_tc_job_007_008_poller_enforcement.spec.ts
+automation_status: Automated
+automation_ref: automation/api/tests/jobs/background-jobs.spec.ts (TC-JOB-007-008)
 owner: unassigned
 status: Draft
 last_reviewed: 2026-07-30
@@ -267,8 +267,8 @@ environment: [local-qa]
 production_safe: false
 destructive: true
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/integration/test_tc_job_007_010_day_start_equity.spec.ts
+automation_status: Automated
+automation_ref: automation/api/tests/jobs/background-jobs.spec.ts (TC-JOB-007-010)
 owner: unassigned
 status: Draft
 last_reviewed: 2026-07-30

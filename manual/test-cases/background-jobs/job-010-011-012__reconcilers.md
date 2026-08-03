@@ -132,8 +132,8 @@ environment: [local-qa]
 production_safe: false
 destructive: true
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/integration/test_tc_job_010_005_idempotency_safety.spec.ts
+automation_status: Automated
+automation_ref: automation/api/tests/jobs/background-jobs.spec.ts (TC-JOB-010-005)
 owner: unassigned
 status: Draft
 last_reviewed: 2026-07-30
@@ -240,8 +240,8 @@ environment: [local-qa, qa]
 production_safe: false
 destructive: true
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/api/tests/background/test_tc_admin_006_001_reconcile.spec.ts
+automation_status: Automated
+automation_ref: automation/api/tests/jobs/background-jobs.spec.ts (TC-ADMIN-006-001)
 owner: unassigned
 status: Draft
 last_reviewed: 2026-07-30

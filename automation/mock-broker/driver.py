@@ -136,6 +136,108 @@ elif action == "poller_enforce":
         out["copy_enabled"] = bool(ss.copy_enabled) if ss else None
         out["auto_liquidated"] = ss.auto_liquidated_at is not None if ss else None
 
+elif action == "poller_pass":
+    # One poll pass over several accounts via the app's crash-isolation wrapper (_enforce_one_safe),
+    # so one account's failure cannot stop the others. Returns each account's resulting state.
+    from app.services import pnl_poller
+    from app.models.broker_account import BrokerAccount
+    from app.models.settings import SubscriberSettings
+    ids = [uuid.UUID(a) for a in spec["account_ids"]]
+    accts = []
+    with SessionLocal() as db:
+        for aid in ids:
+            a = db.get(BrokerAccount, aid)
+            db.expunge(a)
+            accts.append(a)
+    for a in accts:
+        pnl_poller._enforce_one_safe(a)  # swallows per-account exceptions internally
+    res = {}
+    with SessionLocal() as db:
+        for a in accts:
+            ss = db.get(SubscriberSettings, a.user_id)
+            res[str(a.id)] = {"copy_enabled": bool(ss.copy_enabled) if ss else None,
+                              "auto_liquidated": (ss.auto_liquidated_at is not None) if ss else None,
+                              "paused": (ss.pnl_auto_paused_at is not None) if ss else None}
+    out["accounts"] = res
+
+elif action == "recovery_sweep":
+    # Worker-boot crash recovery: replay orphaned PENDING child orders (idempotent client_order_id).
+    import asyncio
+    from app.services import recovery
+    n = asyncio.run(recovery.sweep_orphaned_pending())
+    out["recovered"] = n
+
+elif action == "seed_pending_child":
+    # Seed a PENDING mirror child old enough (created_at < now-60s) for recovery to replay.
+    from datetime import timedelta
+    from decimal import Decimal
+    from app.models.order import Order, OrderStatus, OrderSide, OrderType, InstrumentType
+    puid = uuid.UUID(spec["user_id"]); pacct = uuid.UUID(spec["account_id"]); parent = uuid.UUID(spec["parent_order_id"])
+    old = datetime.now(timezone.utc) - timedelta(seconds=120)
+    with SessionLocal() as db:
+        child = Order(id=uuid.uuid4(), user_id=puid, broker_account_id=pacct, parent_order_id=parent,
+                      instrument_type=InstrumentType.STOCK, symbol=spec.get("symbol", "AAPL"),
+                      side=OrderSide.BUY, order_type=OrderType.MARKET, quantity=Decimal(str(spec.get("quantity", 5))),
+                      status=OrderStatus.PENDING, broker_order_id=None, created_at=old, submitted_at=old)
+        db.add(child); db.commit()
+        out["child_id"] = str(child.id)
+
+elif action == "day_start_equity":
+    from datetime import date
+    from decimal import Decimal
+    from app.services import day_start_equity
+    acct = uuid.UUID(spec["account_id"]); eq = Decimal(str(spec["equity"]))
+    ud = date.fromisoformat(spec["utc_date"]) if spec.get("utc_date") else None
+    with SessionLocal() as db:
+        val = day_start_equity.get_or_record(db, acct, eq, utc_date=ud)
+        db.commit()
+        n = db.execute(__import__("sqlalchemy").text(
+            "SELECT count(*) FROM daily_equity_snapshots WHERE broker_account_id=:a"), {"a": acct}).scalar()
+        out["value"] = str(val); out["rows"] = int(n)
+
+elif action == "reconcile_position":
+    from app.services import position_reconciler
+    from app.models.broker_account import BrokerAccount
+    with SessionLocal() as db:
+        acct = db.get(BrokerAccount, uuid.UUID(spec["account_id"]))
+        report = position_reconciler.reconcile_account(db, acct, apply=bool(spec.get("apply")))
+        db.commit()
+        n = db.execute(__import__("sqlalchemy").text(
+            "SELECT count(*) FROM orders WHERE broker_account_id=:a AND broker_order_id LIKE 'RECONCILE:%'"),
+            {"a": acct.id}).scalar()
+        out["synthetic_closes"] = int(n)
+
+elif action == "retry_heartbeat":
+    from app.services import retry_scheduler
+    out["heartbeat"] = retry_scheduler.heartbeat_status()
+
+elif action == "create_notif":
+    from app.services import notifications
+    with SessionLocal() as db:
+        notifications.create_notification(db, user_id=uuid.UUID(spec["user_id"]),
+                                          type=spec.get("type", "test.note"), message=spec.get("message", "hi"))
+        db.commit()
+    out["created"] = True
+
+elif action == "eod_tick":
+    # QA-side injectable clock: rebind market_hours.now_et for THIS process only (no app edit), then tick.
+    import asyncio
+    from app.services import market_hours, eod_autoclose
+    from app.config import get_settings
+    frozen = datetime.fromisoformat(spec["frozen_et"])
+    market_hours.now_et = lambda: frozen  # noqa: E731 — runtime monkeypatch, driver process only
+    # Force the global EOD flag on for this process (pydantic settings may be frozen).
+    try:
+        object.__setattr__(get_settings(), "eod_autoclose_enabled", True)
+    except Exception:
+        pass
+    try:
+        eod_autoclose._last_swept.clear()
+    except Exception:
+        pass
+    asyncio.run(eod_autoclose._tick())
+    out["ticked"] = True
+
 elif action == "warm_subs_cache":
     import asyncio
     from app.services import cache as cache_svc
