@@ -258,6 +258,18 @@ export function notifCount(cfg: QaConfig, userId: string, type?: string): number
   return Number(psql(`SELECT count(*) FROM notifications WHERE ${where}`) || '0');
 }
 
+/** Read a broker_accounts column as text ('' if null/absent). */
+export function brokerAccountField(cfg: QaConfig, accountId: string, col: string): string {
+  assertLocal(cfg);
+  return psql(`SELECT COALESCE(${col}::text,'') FROM broker_accounts WHERE id='${accountId}'`);
+}
+
+/** True while a broker account row exists. */
+export function brokerAccountExists(cfg: QaConfig, accountId: string): boolean {
+  assertLocal(cfg);
+  return psql(`SELECT count(*) FROM broker_accounts WHERE id='${accountId}'`) === '1';
+}
+
 /** Flip a trader's kill-switch (trading_enabled) — for the disabled-trading 409 path. */
 export function setTradingEnabled(cfg: QaConfig, traderEmail: string, enabled: boolean): void {
   assertLocal(cfg);

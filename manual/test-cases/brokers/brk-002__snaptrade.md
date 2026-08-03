@@ -244,8 +244,8 @@ environment: [local-qa]
 production_safe: false
 destructive: false
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/api/tests/brokers/test_tc_brk_002_009_not_configured.spec.ts
+automation_status: Automated
+automation_ref: automation/api/tests/brokers/broker-integrations.spec.ts (TC-BRK-002-009)
 owner: unassigned
 status: Draft
 last_reviewed: 2026-07-30
