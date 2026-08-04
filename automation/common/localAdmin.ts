@@ -44,3 +44,37 @@ export function isActive(cfg: QaConfig, email: string): boolean {
   assertLocal(cfg); assertSynthetic(email);
   return psql(`SELECT is_active FROM users WHERE email='${email}'`) === 't';
 }
+
+let adminLabelEnsured = false;
+/**
+ * QA-DB remediation for DEF-ADMIN-001: the `add_admin_role` migration added the user_role label as
+ * lowercase 'admin', but the ORM persists/reads UserRole by NAME ('ADMIN'). No app migration fixes it,
+ * so every /api/admin/* route 500s on a real admin row. We ADD the correct 'ADMIN' label (idempotent)
+ * so admin coverage is possible; the buggy lowercase 'admin' label is left in place so the defect stays
+ * reproducible (see promoteToBrokenAdmin). The app's proper fix is `RENAME VALUE 'admin' TO 'ADMIN'`.
+ */
+export function ensureAdminEnumLabel(cfg: QaConfig): void {
+  assertLocal(cfg);
+  if (adminLabelEnsured) return;
+  psql("ALTER TYPE user_role ADD VALUE IF NOT EXISTS 'ADMIN'");
+  adminLabelEnsured = true;
+}
+
+/** Promote a namespaced synthetic user to a WORKING admin (correct 'ADMIN' label). LOCAL-ONLY. */
+export function promoteToAdmin(cfg: QaConfig, email: string): void {
+  assertLocal(cfg); assertSynthetic(email);
+  ensureAdminEnumLabel(cfg);
+  psql(`UPDATE users SET role='ADMIN' WHERE email='${email}'`);
+}
+
+/** Promote to the DEFECTIVE lowercase 'admin' label as shipped — reproduces DEF-ADMIN-001. LOCAL-ONLY. */
+export function promoteToBrokenAdmin(cfg: QaConfig, email: string): void {
+  assertLocal(cfg); assertSynthetic(email);
+  psql(`UPDATE users SET role='admin' WHERE email='${email}'`);
+}
+
+/** Read a user's role label verbatim (case-sensitive) for assertions. */
+export function userRole(cfg: QaConfig, email: string): string {
+  assertLocal(cfg); assertSynthetic(email);
+  return psql(`SELECT lower(role::text) FROM users WHERE email='${email}'`);
+}
