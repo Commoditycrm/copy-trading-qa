@@ -13,6 +13,7 @@ causes ruled out, (3) expected behavior verified, (4) redacted evidence captured
 | **DEF-AUTH-003** | Medium | Mixed-case forgot-password silently no-match (no reset link) | TC-AUTH-004-006 | ×2 + control | [DEF-AUTH-003.md](DEF-AUTH-003.md) |
 | **DEF-COPY-001** | High | Transient-retry of a CLOSE mirror resets `is_closing` to false | TC-COPY-003-007 | ×2 | [DEF-COPY-001.md](DEF-COPY-001.md) |
 | **DEF-ADMIN-001** | High | `user_role` enum label case drift (regression — fix migration `c4f1a9d3e7b2` missing from `qa-branch`) — every `/api/admin/*` returns 500 for a real admin | TC-ADMIN-001-005 | ×2+ | [DEF-ADMIN-001.md](DEF-ADMIN-001.md) |
+| **DEF-UI-001** | Medium | `/brokers` white-screens (client-side exception) when a user holds a broker name not in the frontend `BROKER_META` (e.g. `fake`) — `BrokerAvatar` derefs `meta.name` with no fallback | TC-WF-06-002 | ×2+ | [DEF-UI-001.md](DEF-UI-001.md) |
 
 All are behavior defects (no fix applied — app repo is read-only; QA reports, app team fixes). DEF-AUTH-*/COPY-001
 confirm baseline §27 items; **DEF-ADMIN-001** is a migration/ORM enum-case mismatch that renders the entire

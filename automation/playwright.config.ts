@@ -39,7 +39,20 @@ export default defineConfig({
     // API black-box (no browser needed) — the primary API surface.
     { name: 'api', testDir: './api/tests', use: {} },
     // UI E2E — Chromium first; add firefox/webkit when journeys stabilize.
-    { name: 'ui', testDir: './ui/tests', use: { ...devices['Desktop Chrome'], baseURL: cfg.frontendUrl } },
+    // Evidence (trace/screenshot/video) is captured ONLY on failure; drop the API Accept header for
+    // real browser navigation. All UI data is synthetic (@qa.kopyya.dev) so artifacts carry no real PII.
+    {
+      name: 'ui',
+      testDir: './ui/tests',
+      use: {
+        ...devices['Desktop Chrome'],
+        baseURL: cfg.frontendUrl,
+        extraHTTPHeaders: {},
+        trace: 'retain-on-failure',
+        screenshot: 'only-on-failure',
+        video: 'retain-on-failure',
+      },
+    },
     // Smoke (fake/none broker) — shallow critical paths.
     { name: 'smoke', testDir: './smoke/tests', grep: /@smoke/ },
     // Production read-only smoke — ONLY @prod-safe tests may live here.
