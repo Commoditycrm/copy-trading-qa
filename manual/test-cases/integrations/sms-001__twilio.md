@@ -402,8 +402,8 @@ environment: [local-qa]
 production_safe: false
 destructive: false
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/api/tests/integrations/test_tc_admin_005_001_test_sms.spec.ts
+automation_status: Automated
+automation_ref: automation/api/tests/admin/admin.spec.ts
 owner: unassigned
 status: Draft
 last_reviewed: 2026-07-30

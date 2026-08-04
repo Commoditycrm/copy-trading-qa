@@ -22,8 +22,8 @@ environment: [local-qa, qa]
 production_safe: false
 destructive: false
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/api/tests/admin/test_tc_admin_001_001_users.spec.ts
+automation_status: Automated
+automation_ref: automation/api/tests/admin/admin.spec.ts
 owner: unassigned
 status: Draft
 last_reviewed: 2026-07-30
@@ -49,8 +49,8 @@ environment: [local-qa, qa]
 production_safe: false
 destructive: false
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/api/tests/admin/test_tc_admin_001_002_guards.spec.ts
+automation_status: Automated
+automation_ref: automation/api/tests/admin/admin.spec.ts
 owner: unassigned
 status: Draft
 last_reviewed: 2026-07-30
@@ -76,8 +76,8 @@ environment: [local-qa, qa]
 production_safe: false
 destructive: false
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/api/tests/admin/test_tc_admin_001_003_audit_gap.spec.ts
+automation_status: Automated
+automation_ref: automation/api/tests/admin/admin.spec.ts
 owner: unassigned
 status: Draft
 last_reviewed: 2026-07-30
@@ -103,8 +103,8 @@ environment: [local-qa, qa]
 production_safe: false
 destructive: false
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/api/tests/admin/test_tc_admin_002_002_dashboards.spec.ts
+automation_status: Automated
+automation_ref: automation/api/tests/admin/admin.spec.ts
 owner: unassigned
 status: Draft
 last_reviewed: 2026-07-30
@@ -130,8 +130,8 @@ environment: [local-qa, qa]
 production_safe: false
 destructive: false
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/api/tests/admin/test_tc_admin_003_001_rejected.spec.ts
+automation_status: Automated
+automation_ref: automation/api/tests/admin/admin.spec.ts
 owner: unassigned
 status: Draft
 last_reviewed: 2026-07-30
@@ -157,8 +157,8 @@ environment: [local-qa]
 production_safe: false
 destructive: true
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/integration/test_tc_admin_004_001_load_test.spec.ts
+automation_status: Automated
+automation_ref: automation/api/tests/admin/admin.spec.ts
 owner: unassigned
 status: Draft
 last_reviewed: 2026-07-30
@@ -184,8 +184,8 @@ environment: [local-qa, qa]
 production_safe: false
 destructive: false
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/api/tests/admin/test_tc_admin_005_002_config_knobs.spec.ts
+automation_status: Automated
+automation_ref: automation/api/tests/admin/admin.spec.ts
 owner: unassigned
 status: Draft
 last_reviewed: 2026-07-30
@@ -211,8 +211,8 @@ environment: [local-qa, qa]
 production_safe: false
 destructive: false
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/api/tests/admin/test_tc_admin_001_004_authz.spec.ts
+automation_status: Automated
+automation_ref: automation/api/tests/admin/admin.spec.ts
 owner: unassigned
 status: Draft
 last_reviewed: 2026-07-30
@@ -238,14 +238,41 @@ environment: [local-qa]
 production_safe: false
 destructive: false
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/ui/tests/admin/tc-admin-007-001-orphaned-dashboard.spec.ts
+automation_status: Automated (API-level — backend returns 404; UI-nav unreachability facet remains manual)
+automation_ref: automation/api/tests/admin/admin.spec.ts
 owner: unassigned
 status: Draft
-last_reviewed: 2026-07-30
+last_reviewed: 2026-08-04
 tags: [ui, admin, P2]
 source_refs: [frontend/app/admin/dashboard/* (no nav entry/links — baseline §26 Unreachable)]
 evidence_requirements: [/admin/dashboard loads only via direct URL; no nav item or in-app link points to it]
 ```
 **Steps:** 1) Inspect admin nav (no link). 2) Navigate directly to /admin/dashboard.
 **Expected Results:** Page renders via URL but is unreachable through the UI (documented dead/unreachable route). Recommend removal or wiring — governance note.
+
+---
+```yaml
+id: TC-ADMIN-001-005
+title: DEF-ADMIN-001 — shipped user_role enum label case drift breaks every admin endpoint (500)
+primary_func_id: ADMIN-001
+related_func_ids: []
+module: admin
+test_level: L2
+test_type: Data-Integrity
+priority: P0
+risk: Critical
+environment: [local-qa]
+production_safe: false
+destructive: false
+automation_candidate: true
+automation_status: Automated (DEFECT CONFIRM — documents current behavior)
+automation_ref: automation/api/tests/admin/admin.spec.ts
+owner: unassigned
+status: Draft
+last_reviewed: 2026-08-04
+tags: [api, admin, defect, data-integrity, P0]
+source_refs: [alembic f1a2b3c4d5e6_add_admin_role (ADD VALUE 'admin' lowercase), app/models/user.py::UserRole (persists/reads by NAME 'ADMIN'), no fix migration (cf. f9c2e3d8a1b7_fix_enum_case_drift for other enums)]
+evidence_requirements: [A user promoted to the shipped lowercase 'admin' label makes the admin's own row un-deserializable → GET /api/admin/stats returns 500 (LookupError: 'admin' not among enum values)]
+```
+**Steps:** 1) Promote a synthetic user to the shipped lowercase `admin` label. 2) GET /api/admin/stats with a valid admin token.
+**Expected Results (defect):** 500 Internal Server Error — the ORM cannot map the lowercase label to `UserRole`. **Correct behavior would be 200.** QA remediation (add the correct `ADMIN` label) unblocks the rest of the admin suite; the app must ship `ALTER TYPE user_role RENAME VALUE 'admin' TO 'ADMIN'`. See DEF-ADMIN-001.

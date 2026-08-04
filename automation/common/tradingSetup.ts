@@ -250,6 +250,12 @@ export function subscriberCacheExists(cfg: QaConfig, traderId: string): boolean 
   return redis(`EXISTS "cache:subs:${traderId}"`) === '1';
 }
 
+/** Read a Redis key's value ('' if absent) — for runtime-config persistence assertions (config:*). */
+export function redisGet(cfg: QaConfig, key: string): string {
+  assertLocal(cfg);
+  return redis(`GET "${key}"`);
+}
+
 /** Count audit_logs rows for an action, optionally scoped to an actor (per-user isolation checks). */
 export function auditByActor(cfg: QaConfig, action: string, actorUserId?: string): number {
   assertLocal(cfg);
