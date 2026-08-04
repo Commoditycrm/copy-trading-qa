@@ -73,6 +73,8 @@ services:
       - alembic upgrade head && exec uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 1 --proxy-headers --forwarded-allow-ips=*
     ports:
       - "127.0.0.1:8000:8000"
+      - "127.0.0.1:3000:3000"           # frontend shares this netns (see frontend.network_mode) so its
+                                        # build-baked rewrite target localhost:8000 reaches this backend
     depends_on:
       db:
         condition: service_healthy
@@ -113,11 +115,15 @@ services:
     build:
       context: ../../../copy-trading-app/frontend
     environment:
-      BACKEND_URL: http://backend:8000
+      BACKEND_URL: http://backend:8000  # runtime env (harmless); the rewrite target is baked at build to
+                                        # localhost:8000, which the shared netns below routes to the backend
       HOME: /tmp
       NEXT_TELEMETRY_DISABLED: "1"
-    ports:
-      - "127.0.0.1:3000:3000"
+    # Share the backend's network namespace: the frontend image baked its /api proxy target as
+    # http://localhost:8000 at build time (next build freezes rewrites into routes-manifest.json, and the
+    # app repo Dockerfile is READ-ONLY so we can't pass a build arg). Sharing netns makes the frontend's
+    # localhost:8000 hit the backend. Its :3000 is published on the backend service above.
+    network_mode: "service:backend"
     depends_on:
       backend:
         condition: service_healthy
