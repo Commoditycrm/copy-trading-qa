@@ -15,6 +15,9 @@ causes ruled out, (3) expected behavior verified, (4) redacted evidence captured
 | **DEF-ADMIN-001** | High | `user_role` enum label case drift (regression — fix migration `c4f1a9d3e7b2` missing from `qa-branch`) — every `/api/admin/*` returns 500 for a real admin | TC-ADMIN-001-005 | ×2+ | [DEF-ADMIN-001.md](DEF-ADMIN-001.md) |
 | **DEF-UI-001** | Medium | `/brokers` white-screens (client-side exception) when a user holds a broker name not in the frontend `BROKER_META` (e.g. `fake`) — `BrokerAvatar` derefs `meta.name` with no fallback | TC-WF-06-002 | ×2+ | [DEF-UI-001.md](DEF-UI-001.md) |
 | **DEF-SEC-001** | Medium | SSE auth JWT carried in the URL query (`/api/events?token=`) is recorded in cleartext in the uvicorn access log — replayable-token-in-logs (runtime confirmation of §24) | SA-007 | ×2 | [DEF-SEC-001.md](DEF-SEC-001.md) |
+| **DEF-A11Y-001** | High | Form controls without programmatic labels / accessible names (axe `label`/`select-name`, critical) — /register, /settings (+3 selects), /trade-panel, /admin | A11Y-SCAN | ×2 | [DEF-A11Y-001.md](DEF-A11Y-001.md) |
+| **DEF-A11Y-002** | Medium | Insufficient colour contrast (axe `color-contrast`, serious, WCAG 1.4.3 AA) — /terms, /privacy, /brokers, /settings, /trade-panel, /admin | A11Y-SCAN | ×2 | [DEF-A11Y-002.md](DEF-A11Y-002.md) |
+| **DEF-A11Y-003** | Medium | Link-in-text (colour-only), prohibited ARIA attr, non-focusable scroll region (axe serious) — /terms, /privacy, /calendar, /performance | A11Y-SCAN | ×2 | [DEF-A11Y-003.md](DEF-A11Y-003.md) |
 
 All are behavior defects (no fix applied — app repo is read-only; QA reports, app team fixes). DEF-AUTH-*/COPY-001
 confirm baseline §27 items; **DEF-ADMIN-001** is a migration/ORM enum-case mismatch that renders the entire
@@ -27,6 +30,7 @@ admin surface non-functional on a clean deploy (root cause + suggested `RENAME V
 | TD-001 | App `EmailStr` rejects special-use TLDs (`.test`/`.example`/`.invalid`); synthetic `@kopyya.test` emails 422 at registration | Harness now uses `@qa.kopyya.dev` (`QA_EMAIL_DOMAIN`); documented in `docs/TEST_DATA_STRATEGY.md` |
 | TD-002 | Per-IP register throttle (15/hr) bled across tests → 429 | Harness sends a unique `X-Forwarded-For` per user to isolate the throttle |
 | TD-003 | Email-sink matched tokens by `sub` only → sometimes picked the verify token (wrong type) | Matcher now filters by claim `type` (`reset`/`verify`) |
+| TD-004 | `TC-COPY-004-002` (OCO, ~26s heavy mock-broker test) timed out **once** under 8-worker saturation during the a11y-phase regression. Passes **3/3 isolated** + clean full re-run **185/185**. Environmental timing flake, **not** an app defect or a11y regression. | Mitigation if it recurs: pin `--workers` or raise this test's timeout. |
 
 ## Known/Potential (other modules — not yet executed)
 

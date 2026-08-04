@@ -53,6 +53,20 @@ export default defineConfig({
         video: 'retain-on-failure',
       },
     },
+    // Accessibility (axe-core) — Chromium desktop; tests switch to a mobile viewport / 200% zoom / 320px
+    // reflow in-test. Kept as its own project so the UI regression count stays stable.
+    {
+      name: 'a11y',
+      testDir: './a11y/tests',
+      use: {
+        ...devices['Desktop Chrome'],
+        baseURL: cfg.frontendUrl,
+        extraHTTPHeaders: {},
+        trace: 'retain-on-failure',
+        screenshot: 'only-on-failure',
+        video: 'retain-on-failure',
+      },
+    },
     // Smoke (fake/none broker) — shallow critical paths.
     { name: 'smoke', testDir: './smoke/tests', grep: /@smoke/ },
     // Production read-only smoke — ONLY @prod-safe tests may live here.
