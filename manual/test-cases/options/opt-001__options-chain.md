@@ -75,8 +75,8 @@ environment: [local-qa]
 production_safe: false
 destructive: false
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/api/tests/options/test_tc_opt_001_004_quote.spec.ts
+automation_status: Automated
+automation_ref: automation/api/tests/portfolio/options.spec.ts (TC-OPT-001-004)
 owner: unassigned
 status: Draft
 last_reviewed: 2026-07-30
@@ -102,8 +102,8 @@ environment: [local-qa]
 production_safe: false
 destructive: false
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/api/tests/options/test_tc_opt_001_005_validation.spec.ts
+automation_status: Automated
+automation_ref: automation/api/tests/portfolio/options.spec.ts (TC-OPT-001-005)
 owner: unassigned
 status: Draft
 last_reviewed: 2026-07-30
@@ -129,8 +129,8 @@ environment: [local-qa, qa]
 production_safe: false
 destructive: false
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/api/tests/options/test_tc_opt_001_006_authz.spec.ts
+automation_status: Automated
+automation_ref: automation/api/tests/portfolio/options.spec.ts (TC-OPT-001-006)
 owner: unassigned
 status: Draft
 last_reviewed: 2026-07-30

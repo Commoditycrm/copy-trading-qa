@@ -21,8 +21,8 @@ environment: [local-qa]
 production_safe: false
 destructive: true
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/integration/test_tc_pnl_001_001_calendar.spec.ts
+automation_status: Automated
+automation_ref: automation/api/tests/portfolio/calendar.spec.ts (TC-PNL-001-001)
 owner: unassigned
 status: Draft
 last_reviewed: 2026-07-30
@@ -48,8 +48,8 @@ environment: [local-qa, qa]
 production_safe: false
 destructive: false
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/api/tests/pnl/test_tc_pnl_001_002_view_as.spec.ts
+automation_status: Automated
+automation_ref: automation/api/tests/portfolio/calendar.spec.ts (TC-PNL-001-002)
 owner: unassigned
 status: Draft
 last_reviewed: 2026-07-30
@@ -129,8 +129,8 @@ environment: [local-qa, qa]
 production_safe: false
 destructive: false
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/api/tests/pnl/test_tc_pnl_001_005_validation.spec.ts
+automation_status: Automated
+automation_ref: automation/api/tests/portfolio/calendar.spec.ts (TC-PNL-001-005)
 owner: unassigned
 status: Draft
 last_reviewed: 2026-07-30

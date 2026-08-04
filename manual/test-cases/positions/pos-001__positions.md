@@ -22,8 +22,8 @@ environment: [local-qa]
 production_safe: false
 destructive: true
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/api/tests/positions/test_tc_pos_001_001_list.spec.ts
+automation_status: Automated
+automation_ref: automation/api/tests/portfolio/positions.spec.ts (TC-POS-001-001)
 owner: unassigned
 status: Draft
 last_reviewed: 2026-07-30
@@ -76,8 +76,8 @@ environment: [local-qa]
 production_safe: false
 destructive: true
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/integration/test_tc_pos_001_003_close_one.spec.ts
+automation_status: Automated
+automation_ref: automation/api/tests/portfolio/positions.spec.ts (TC-POS-001-003)
 owner: unassigned
 status: Draft
 last_reviewed: 2026-07-30
@@ -103,8 +103,8 @@ environment: [local-qa]
 production_safe: false
 destructive: false
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/api/tests/positions/test_tc_pos_001_004_close_guards.spec.ts
+automation_status: Automated
+automation_ref: automation/api/tests/portfolio/positions.spec.ts (TC-POS-001-004)
 owner: unassigned
 status: Draft
 last_reviewed: 2026-07-30
@@ -130,8 +130,8 @@ environment: [local-qa]
 production_safe: false
 destructive: true
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/integration/test_tc_pos_001_005_close_all.spec.ts
+automation_status: Automated
+automation_ref: automation/api/tests/portfolio/positions.spec.ts (TC-POS-001-005)
 owner: unassigned
 status: Draft
 last_reviewed: 2026-07-30
@@ -157,8 +157,8 @@ environment: [local-qa]
 production_safe: false
 destructive: true
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/integration/test_tc_pos_001_006_aggregation.spec.ts
+automation_status: Automated
+automation_ref: automation/api/tests/portfolio/positions.spec.ts (TC-POS-001-006)
 owner: unassigned
 status: Draft
 last_reviewed: 2026-07-30
@@ -184,8 +184,8 @@ environment: [local-qa]
 production_safe: false
 destructive: true
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/integration/test_tc_pos_001_007_bulk_exit.spec.ts
+automation_status: Automated
+automation_ref: automation/api/tests/portfolio/positions.spec.ts (TC-POS-001-007)
 owner: unassigned
 status: Draft
 last_reviewed: 2026-07-30

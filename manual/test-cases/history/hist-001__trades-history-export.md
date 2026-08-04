@@ -22,8 +22,8 @@ environment: [local-qa, qa]
 production_safe: false
 destructive: false
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/api/tests/history/test_tc_hist_001_001_list.spec.ts
+automation_status: Automated
+automation_ref: automation/api/tests/portfolio/history.spec.ts (TC-HIST-001-001)
 owner: unassigned
 status: Draft
 last_reviewed: 2026-07-30
@@ -49,8 +49,8 @@ environment: [local-qa, qa]
 production_safe: false
 destructive: false
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/api/tests/history/test_tc_hist_001_002_paged.spec.ts
+automation_status: Automated
+automation_ref: automation/api/tests/portfolio/history.spec.ts (TC-HIST-001-002)
 owner: unassigned
 status: Draft
 last_reviewed: 2026-07-30
@@ -76,8 +76,8 @@ environment: [local-qa, qa]
 production_safe: false
 destructive: false
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/api/tests/history/test_tc_hist_001_003_stats.spec.ts
+automation_status: Automated
+automation_ref: automation/api/tests/portfolio/history.spec.ts (TC-HIST-001-003)
 owner: unassigned
 status: Draft
 last_reviewed: 2026-07-30
@@ -103,8 +103,8 @@ environment: [local-qa, qa]
 production_safe: false
 destructive: false
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/api/tests/history/test_tc_hist_001_004_get_one.spec.ts
+automation_status: Automated
+automation_ref: automation/api/tests/portfolio/history.spec.ts (TC-HIST-001-004)
 owner: unassigned
 status: Draft
 last_reviewed: 2026-07-30
@@ -157,8 +157,8 @@ environment: [local-qa, qa]
 production_safe: false
 destructive: false
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/api/tests/history/test_tc_export_001_001_export.spec.ts
+automation_status: Automated
+automation_ref: automation/api/tests/portfolio/export.spec.ts (TC-EXPORT-001-001)
 owner: unassigned
 status: Draft
 last_reviewed: 2026-07-30
@@ -184,8 +184,8 @@ environment: [local-qa, qa]
 production_safe: false
 destructive: false
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/api/tests/history/test_tc_export_001_002_admin_export.spec.ts
+automation_status: Automated
+automation_ref: automation/api/tests/portfolio/export.spec.ts (TC-EXPORT-001-002)
 owner: unassigned
 status: Draft
 last_reviewed: 2026-07-30
@@ -211,8 +211,8 @@ environment: [local-qa, qa]
 production_safe: false
 destructive: false
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: automation/api/tests/history/test_tc_export_001_003_count_format.spec.ts
+automation_status: Automated
+automation_ref: automation/api/tests/portfolio/export.spec.ts (TC-EXPORT-001-003)
 owner: unassigned
 status: Draft
 last_reviewed: 2026-07-30
