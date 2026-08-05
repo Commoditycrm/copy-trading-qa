@@ -1,32 +1,190 @@
-# PLACEHOLDER — PR gate. Trigger is workflow_dispatch only until the framework is installed
-# and a fake-broker QA stack is wired (see docs/TEST_PLAN.md §4). Do not enable `pull_request`
-# until then. No secrets referenced here.
-name: pr (placeholder)
+# QA / PR validation — fast, stable gate for pull requests. Runs static checks + a curated fake-broker
+# smoke against a disposable local Docker stack. No production, no real credentials, no destructive long
+# regressions / perf / ZAP-active / paper / prod-smoke. Target wall-clock ~10-15 min (jobs run in parallel).
+#
+# The stack builds the app images from the (READ-ONLY) application repo, checked out as a sibling via a
+# read-only token secret (APP_REPO_TOKEN). This workflow never modifies the application repository.
+name: QA / PR
 
 on:
+  pull_request:
+    branches: [main]
   workflow_dispatch: {}
-  # pull_request:            # ENABLE after framework install + QA stack wiring
-  #   branches: [ main ]
+
+# Least privilege; cancel superseded runs on the same ref.
+permissions:
+  contents: read
+concurrency:
+  group: qa-pr-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '24'
 
 jobs:
-  fast-checks:
+  # ---- Static checks (no stack) -------------------------------------------------------------------
+  typecheck:
+    name: QA / Typecheck
     runs-on: ubuntu-latest
+    timeout-minutes: 8
+    defaults:
+      run:
+        working-directory: automation
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
         with:
-          node-version: '24'
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: automation/package-lock.json
+      - run: npm ci
+      - name: TypeScript typecheck
+        run: npm run typecheck
+      - name: Prettier check
+        run: npm run format:check
+
+  security-scan:
+    name: QA / Security Scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: automation/package-lock.json
       - name: Install (locked)
         working-directory: automation
         run: npm ci
-      - name: Typecheck
-        working-directory: automation
-        run: npm run typecheck
-      - name: Secret scan
-        run: echo "TODO: gitleaks detect --no-banner"
-      - name: Dependency audit
+      - name: Dependency audit (high+)
         working-directory: automation
         run: npm audit --audit-level=high
-      # - name: API fast + smoke (@api @smoke, fake broker)
-      #   working-directory: automation
-      #   run: npx playwright test --project=api --grep "@smoke|@fast"
+      - name: Secret scan (gitleaks, working tree)
+        run: |
+          docker run --rm -v "${{ github.workspace }}:/repo:ro" \
+            zricethezav/gitleaks:latest dir /repo --no-banner --redact --exit-code 1
+
+  # ---- API smoke (core stack, fake broker) --------------------------------------------------------
+  pr-smoke:
+    name: QA / PR Smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      QA_ENV: local
+      BROKER_MODE: fake
+    steps:
+      - name: Checkout QA repo
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          path: copy-trading-qa
+      - name: Checkout application repo (READ-ONLY, build context only)
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          repository: Commoditycrm/copy-trading-app
+          ref: qa-branch
+          token: ${{ secrets.APP_REPO_TOKEN }}
+          path: copy-trading-app
+          persist-credentials: false
+      - uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: copy-trading-qa/automation/package-lock.json
+      - name: Install (locked)
+        working-directory: copy-trading-qa/automation
+        run: npm ci
+      - name: Bring up disposable stack (fake broker)
+        working-directory: copy-trading-qa/automation
+        run: npm run local:up
+      - name: Wait for health
+        working-directory: copy-trading-qa/automation
+        run: npm run local:health
+      - name: Auth smoke
+        working-directory: copy-trading-qa/automation
+        run: npx playwright test --project=api --grep @auth --workers=4
+      - name: Trading P0 smoke (core; heavy OCO/concurrent excluded — full regression covers them)
+        working-directory: copy-trading-qa/automation
+        run: npx playwright test --project=api --grep '(?=.*@trading)(?=.*@P0)' --grep-invert 'TC-COPY-004-002|TC-COPY-002-013' --workers=4
+      - name: Risk-control P0 smoke
+        working-directory: copy-trading-qa/automation
+        run: npx playwright test --project=api --grep '(?=.*@risk)(?=.*@P0)' --workers=4
+      - name: Broker offline-security smoke
+        working-directory: copy-trading-qa/automation
+        run: npx playwright test --project=api --grep @broker --workers=4
+      - name: Tear down stack + volumes
+        if: always()
+        working-directory: copy-trading-qa/automation
+        run: npm run local:down
+      - name: Upload reports (redacted)
+        if: always()
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+        with:
+          name: pr-smoke-reports
+          path: |
+            copy-trading-qa/automation/reports/junit
+            copy-trading-qa/automation/reports/artifacts
+          retention-days: 7
+          if-no-files-found: ignore
+
+  # ---- UI + accessibility smoke (full stack incl. frontend) ---------------------------------------
+  ui-smoke:
+    name: QA / UI Smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 22
+    env:
+      QA_ENV: local
+      BROKER_MODE: fake
+    steps:
+      - name: Checkout QA repo
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          path: copy-trading-qa
+      - name: Checkout application repo (READ-ONLY, build context only)
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          repository: Commoditycrm/copy-trading-app
+          ref: qa-branch
+          token: ${{ secrets.APP_REPO_TOKEN }}
+          path: copy-trading-app
+          persist-credentials: false
+      - uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: copy-trading-qa/automation/package-lock.json
+      - name: Cache Playwright browsers
+        uses: actions/cache@1bd1e32a3bdc45362d1e726936510720a7c30a57 # v4.2.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('copy-trading-qa/automation/package-lock.json') }}
+      - name: Install (locked)
+        working-directory: copy-trading-qa/automation
+        run: npm ci
+      - name: Install Chromium
+        working-directory: copy-trading-qa/automation
+        run: npx playwright install --with-deps chromium
+      - name: Bring up full stack (incl. frontend)
+        working-directory: copy-trading-qa/automation
+        run: npm run local:up:full
+      - name: Wait for health
+        working-directory: copy-trading-qa/automation
+        run: npm run local:health
+      - name: UI smoke (register / login / trade→mirror)
+        working-directory: copy-trading-qa/automation
+        run: npx playwright test --project=ui --grep 'TC-WF-01-001|TC-WF-02-001|TC-WF-10-001' --workers=2
+      - name: Accessibility smoke (public page scans)
+        working-directory: copy-trading-qa/automation
+        run: npx playwright test --project=a11y --grep 'public' --workers=2
+      - name: Tear down stack + volumes
+        if: always()
+        working-directory: copy-trading-qa/automation
+        run: npm run local:down
+      - name: Upload failure traces/screenshots (redacted)
+        if: failure()
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+        with:
+          name: ui-smoke-artifacts
+          path: copy-trading-qa/automation/reports/artifacts
+          retention-days: 7
+          if-no-files-found: ignore

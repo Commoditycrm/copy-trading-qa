@@ -1,0 +1,8 @@
+node_modules/
+reports/
+test-results/
+**/allure-results/
+**/*.xml
+package-lock.json
+.env
+local-stack/qa.env

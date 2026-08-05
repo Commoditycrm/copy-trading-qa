@@ -1,21 +1,81 @@
-# CI workflows (planned)
+# QA CI/CD — GitHub Actions
 
-Actual GitHub Actions YAML is added **after** tooling approval (`docs/TEST_STRATEGY.md` §9) so pipelines
-don't reference not-yet-approved dependencies. The execution model is defined in
-`docs/TEST_PLAN.md` §4. Planned workflows:
+Production-quality workflows that run the approved QA suites safely. **The application repository is never
+modified** — it is checked out READ-ONLY (`ref: qa-branch`) only as a Docker build context for the
+disposable local stack.
 
-| File (planned) | Trigger | Suites |
+## Workflows
+
+| File | Trigger | What it runs |
 |---|---|---|
-| `pr.yml` | pull_request | lint · gitleaks · pip-audit · `@smoke` · `api-fast` · Schemathesis(quick) · `@a11y`(changed) — **blocking**, ≤10 min |
-| `qa-deploy.yml` | QA env deploy / `repository_dispatch` from app repo | `@smoke` · `api-full` · `integration` · `e2e-ui` · `@a11y` · ZAP baseline — blocking |
-| `nightly.yml` | schedule (cron) | full regression · `performance` · ZAP full · Trivy · dep audit — alerts |
-| `release-candidate.yml` | tag / release branch | full regression · perf at scale · ZAP full · coverage gate — blocking |
-| `broker-contract.yml` | **manual** `workflow_dispatch` | `broker-contract` (`@paper`) — Alpaca **Paper** contract validation only; DevOps-owned creds; never automatic |
-| `prod-smoke.yml` | post-deploy on app `main` (dispatch) | `prod-smoke` **read-only** — blocking rollback signal; creds + ZAP auth **owned by DevOps/security lead** |
+| `pr.yml` | `pull_request` → `main`, `workflow_dispatch` | **QA / Typecheck** (tsc + prettier), **QA / Security Scan** (npm audit + gitleaks), **QA / PR Smoke** (auth + trading-P0 + risk-P0 + broker offline, fake broker), **QA / UI Smoke** (UI + a11y public scans). ~10-15 min, jobs parallel. |
+| `qa-regression.yml` | `workflow_dispatch` (gated env) | Full API + UI E2E + accessibility + Schemathesis (unauth) + ZAP baseline (authorized input only). |
+| `nightly.yml` | `schedule` 04:00 UTC, `workflow_dispatch` | Full API + UI + a11y + security Playwright + Trivy fs/image + gitleaks + npm audit + pip-audit + a limited local-safe perf baseline. No stress/soak. |
+| `performance.yml` | `workflow_dispatch` only | k6 + Playwright perf (load-level / subscriber-count / duration inputs). Refuses production URLs. Sanitized summaries only. |
+| `broker-contract.yml` | `workflow_dispatch` only | `fake` (default, safe) or `paper` (gated `alpaca-paper` environment, `RUN-PAPER` confirm). Never IBKR / live money. |
+| `prod-smoke.yml` | `workflow_dispatch` (gated env) | **BLOCKED** until DevOps provides account + written authorization + secrets. Read-only `@prod-safe` only. |
 
-All triggers target a **fake-broker** environment except: `broker-contract.yml` (manual, Alpaca **Paper**
-only) and `prod-smoke` (**read-only** against production). Destructive (`@destructive`) tests are
-tag-excluded everywhere except local/QA with fake broker.
+## Safety controls (every workflow)
 
-**Toolchains:** UI (`e2e-ui`, `accessibility`) run on **Node/TypeScript (@playwright/test)**;
-API/integration/contract/smoke run on **Python (pytest)**; performance runs on **k6**.
+- **Teardown** with `if: always()` (`npm run local:down` → `docker compose down -v`).
+- **Destructive/stack jobs run only** with `QA_ENV=local` + `BROKER_MODE=fake`; runtime `common/safety.ts`
+  refuses mutations on prod and destructive tests without a fake broker.
+- **Production hostname is refused** everywhere except `prod-smoke.yml` (read-only, gated, authorized input).
+- **No secrets are printed**; QA stack secrets are generated at runtime by `local-stack/up.mjs` (nothing
+  committed). `qa.env` / `.env` are gitignored.
+- **Redacted artifacts only**: JUnit, Playwright HTML, failure traces/screenshots, scanner summaries.
+- **Concurrency groups** cancel superseded branch runs (`cancel-in-progress: true` on PR/perf).
+- **Explicit `timeout-minutes`** on every job.
+- **npm + Playwright-browser caching** (`actions/setup-node` cache + `actions/cache`).
+- **Actions pinned by commit SHA** (`checkout`/`setup-node`/`upload-artifact`/`cache`). Scanners run via
+  Docker images (gitleaks/trivy/schemathesis/zap/k6); pin these to digests for full reproducibility (follow-up).
+- **No `pull_request_target`** — untrusted PR code never runs with secrets. Fork PRs get the static checks
+  only (stack jobs need `APP_REPO_TOKEN`, unavailable to forks).
+
+## Required secrets & owners
+
+| Secret | Scope | Owner | Purpose |
+|---|---|---|---|
+| `APP_REPO_TOKEN` | repo / org | DevOps | **Read-only** token (fine-grained PAT or deploy key) to check out `Commoditycrm/copy-trading-app` as a build context. Read-only; never used to write. |
+| `ALPACA_PAPER_KEY`, `ALPACA_PAPER_SECRET` | `alpaca-paper` environment | DevOps | Alpaca **Paper** creds for `broker-contract.yml` paper mode. No live money. |
+| `PROD_BASE_URL`, `PROD_SMOKE_TOKEN` | `production-smoke` environment | DevOps / Security lead | Read-only prod smoke target + token. **Not yet provisioned** — `prod-smoke.yml` stays blocked until issued. |
+
+Environments requiring **reviewer approval**: `qa-regression`, `alpaca-paper`, `production-smoke`.
+
+## Artifact retention
+
+PR smoke/UI 7 days · regression/nightly/perf 14 days · prod-smoke 30 days. Failure traces uploaded only on
+failure; reports always.
+
+## Expected durations
+
+Typecheck/Security ~1-3 min · PR Smoke ~10-14 min · UI Smoke ~10-13 min (PR wall-clock ~13-15 min) ·
+Regression ~35-50 min · Nightly ~60-80 min · Performance 15-40 min (by level) · Broker-contract (fake) ~15-20 min.
+
+## TD-004 — OCO timeout resolution
+
+`TC-COPY-004-002` (OCO, ~26s, heavy mock-broker) times out intermittently under CPU contention. Investigation
+(full API suite, `complete suite context`):
+
+- **1 worker (isolated / serial):** passes every time.
+- **4 workers (intended CI count), 5× consecutive:** **4/5 passed** — flaked once → **resource contention
+  confirmed** at the CI worker count.
+- (Locally at 8 workers it flaked ~1 in 3.)
+
+**Resolution** (no retries, no skip, still blocking, runs once per regression): the `@trading` group runs
+**serially (`--workers=1`)** in `qa-regression.yml` and `nightly.yml`; everything else runs parallel at
+`--workers=4`. The heavy trading tests therefore never contend for CPU. The PR **Trading P0 smoke** already
+excludes the two heaviest (`TC-COPY-004-002`, `TC-COPY-002-013`) — the full regression covers them serially.
+
+## Recommended branch-protection required checks (documentation only — not applied automatically)
+
+On `main`, require these status checks (job names):
+
+- `QA / Typecheck`
+- `QA / PR Smoke`
+- `QA / Security Scan`
+- `QA / UI Smoke`
+
+Plus: require branches up to date, require PR review, dismiss stale approvals. **Do not** make
+`qa-regression` / `nightly` / `performance` / `broker-contract` / `prod-smoke` required PR checks — they are
+manual/scheduled/gated. Applying branch protection is left to a repo admin (not changed by CI).

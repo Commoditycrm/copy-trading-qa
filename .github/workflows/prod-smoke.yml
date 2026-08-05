@@ -1,31 +1,57 @@
-# PLACEHOLDER — Production READ-ONLY smoke. Manual/dispatch only. NO writes, NO orders,
-# NO user/broker/config changes, NO seed/cleanup (enforced by common/safety.ts + global-setup).
-# Credentials and any ZAP authorization are owned by the DevOps/security lead and injected as
-# secrets — never stored in this repo.
-name: prod-smoke (placeholder)
+# QA / Production Smoke — READ-ONLY. Manual/dispatch only, behind a gated environment. REMAINS BLOCKED
+# until DevOps provides: (1) a dedicated read-only smoke account, (2) written production-smoke authorization,
+# (3) approved secret ownership. Tests must be read-only: NO orders, NO broker connect/disconnect, NO user
+# mutation, NO seeding, NO runtime-config change, NO ZAP-active, NO performance load. Enforced at runtime by
+# common/safety.ts (BROKER_MODE=none on prod + prod write-block) — this workflow only runs @prod-safe tests.
+# This workflow never touches the application repository.
+name: QA / Production Smoke
 
 on:
-  workflow_dispatch: {}
-  # workflow_run:            # ENABLE as post-deploy hook once approved
-  #   workflows: [ "deploy" ]
-  #   types: [ completed ]
+  workflow_dispatch:
+    inputs:
+      authorize:
+        description: "Type PROD-READONLY-AUTHORIZED (requires written DevOps authorization on file)"
+        required: true
+        default: ''
+  # workflow_run:            # enable as a post-deploy hook ONLY after written authorization
+  #   workflows: ["deploy"]
+  #   types: [completed]
+
+permissions:
+  contents: read
+concurrency:
+  group: qa-prod-smoke
+  cancel-in-progress: false
 
 jobs:
   prod-read-only-smoke:
+    name: QA / Production Smoke
+    if: ${{ github.event.inputs.authorize == 'PROD-READONLY-AUTHORIZED' }}
     runs-on: ubuntu-latest
-    environment: production-smoke   # gated environment; DevOps-owned secrets
+    timeout-minutes: 15
+    environment: production-smoke # gated: DevOps approval + DevOps-owned read-only secrets
     env:
       QA_ENV: prod
-      BROKER_MODE: none
-      # PROD_BASE_URL / PROD_SMOKE_TOKEN injected from the gated environment's secrets.
+      BROKER_MODE: none # no broker interaction on prod (safety.ts enforces read-only)
+      # PROD_BASE_URL / PROD_SMOKE_TOKEN injected from the gated environment's secrets. Never printed.
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
         with:
           node-version: '24'
+          cache: npm
+          cache-dependency-path: automation/package-lock.json
       - name: Install (locked)
         working-directory: automation
         run: npm ci
-      - name: Read-only smoke (@prod-safe only)
+      - name: Read-only production smoke (@prod-safe only, no destructive)
         working-directory: automation
-        run: echo "TODO: npx playwright test --project=prod-smoke --grep @prod-safe"
+        run: npx playwright test --project=prod-smoke --grep @prod-safe
+      - name: Upload report (redacted)
+        if: always()
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+        with:
+          name: prod-smoke-report
+          path: automation/reports/junit
+          retention-days: 30
+          if-no-files-found: ignore

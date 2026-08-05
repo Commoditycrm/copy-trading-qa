@@ -1,0 +1,120 @@
+# QA / Regression — full suites against a disposable local stack. Manual (trusted) trigger only, behind a
+# gated environment. Runs full API + UI E2E + accessibility + Schemathesis (unauth contract), and an OWASP
+# ZAP *baseline* (passive) ONLY when explicitly authorized. Never production; never ZAP-active; no paper/live
+# broker. The application repo is checked out READ-ONLY as a build context and never modified.
+name: QA / Regression
+
+on:
+  workflow_dispatch:
+    inputs:
+      authorize_target:
+        description: "Type AUTHORIZED-QA to confirm the target is the local disposable stack or approved non-prod QA"
+        required: true
+        default: ''
+      run_zap_baseline:
+        description: 'Run OWASP ZAP baseline (passive) against the local QA frontend'
+        type: boolean
+        default: false
+  # Optional post-deploy hook — enable ONLY if a safe, authenticated deploy event exists:
+  # repository_dispatch:
+  #   types: [qa-deployed]
+
+permissions:
+  contents: read
+concurrency:
+  group: qa-regression-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  regression:
+    name: QA / Regression
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    environment: qa-regression # gated: requires reviewer approval + holds any protected config
+    env:
+      QA_ENV: local
+      BROKER_MODE: fake
+      COMPOSE_NET: copytrading-qa-local_default
+    steps:
+      - name: Authorization gate (refuse unless explicitly confirmed)
+        run: |
+          if [ "${{ github.event.inputs.authorize_target }}" != "AUTHORIZED-QA" ]; then
+            echo "::error::authorize_target must be 'AUTHORIZED-QA'. Refusing to run."
+            exit 1
+          fi
+      - name: Checkout QA repo
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          path: copy-trading-qa
+      - name: Checkout application repo (READ-ONLY, build context only)
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          repository: Commoditycrm/copy-trading-app
+          ref: qa-branch
+          token: ${{ secrets.APP_REPO_TOKEN }}
+          path: copy-trading-app
+          persist-credentials: false
+      - uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: copy-trading-qa/automation/package-lock.json
+      - name: Cache Playwright browsers
+        uses: actions/cache@1bd1e32a3bdc45362d1e726936510720a7c30a57 # v4.2.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('copy-trading-qa/automation/package-lock.json') }}
+      - name: Install (locked)
+        working-directory: copy-trading-qa/automation
+        run: npm ci
+      - name: Install Chromium
+        working-directory: copy-trading-qa/automation
+        run: npx playwright install --with-deps chromium
+      - name: Bring up full stack (fake broker)
+        working-directory: copy-trading-qa/automation
+        run: npm run local:up:full
+      - name: Wait for health
+        working-directory: copy-trading-qa/automation
+        run: npm run local:health
+      # TD-004: the heavy mock-broker trading tests (esp. TC-COPY-004-002 OCO, ~26s) time out under CPU
+      # contention at ≥4 workers. Resolution: run the @trading group SERIALLY (workers=1) — still blocking,
+      # still runs once, no retries, no skip. Everything else runs parallel.
+      - name: Full API regression — non-trading (parallel)
+        working-directory: copy-trading-qa/automation
+        run: npx playwright test --project=api --grep-invert @trading --workers=4
+      - name: Full API regression — trading group (SERIAL, TD-004)
+        working-directory: copy-trading-qa/automation
+        run: npx playwright test --project=api --grep @trading --workers=1
+      - name: Full UI E2E
+        working-directory: copy-trading-qa/automation
+        run: npx playwright test --project=ui --workers=2
+      - name: Full accessibility
+        working-directory: copy-trading-qa/automation
+        run: npx playwright test --project=a11y --workers=2
+      - name: Schemathesis — unauthenticated contract checks
+        run: |
+          docker run --rm --network "${COMPOSE_NET}" schemathesis/schemathesis:stable \
+            run http://backend:8000/openapi.json --checks all --max-examples 8 --workers 2 || true
+      - name: OWASP ZAP baseline (passive, local frontend, authorized only)
+        if: ${{ github.event.inputs.run_zap_baseline == 'true' }}
+        run: |
+          mkdir -p copy-trading-qa/automation/reports/zap
+          docker run --rm --network "${COMPOSE_NET}" \
+            -v "${{ github.workspace }}/copy-trading-qa/automation/reports/zap:/zap/wrk:rw" \
+            zaproxy/zap-stable zap-baseline.py -t http://backend:3000 -I -m 3 -r zap-baseline.html || true
+      - name: Tear down stack + volumes
+        if: always()
+        working-directory: copy-trading-qa/automation
+        run: npm run local:down
+      - name: Upload reports (redacted)
+        if: always()
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+        with:
+          name: qa-regression-reports
+          path: |
+            copy-trading-qa/automation/reports/junit
+            copy-trading-qa/automation/reports/html
+            copy-trading-qa/automation/reports/artifacts
+            copy-trading-qa/automation/reports/zap
+          retention-days: 14
+          if-no-files-found: ignore
