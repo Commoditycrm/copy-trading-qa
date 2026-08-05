@@ -17,7 +17,10 @@ const NEW_STRONG_PW = 'QaReset!2026xZ';
 test.describe('WF Auth journeys (UI)', () => {
   test.skip(({ config }) => config.envName !== 'local', 'UI E2E runs against the local full stack.');
 
-  test('TC-WF-01-001 subscriber registers and lands authenticated @ui @P1 @integration', async ({ page, config }, info) => {
+  test('TC-WF-01-001 subscriber registers and lands authenticated @ui @P1 @integration', async ({
+    page,
+    config,
+  }, info) => {
     meta(info, 'WF-01', ['AUTH-001']);
     const u = makeUser('subscriber');
     const reg = new RegisterPage(page);
@@ -69,7 +72,10 @@ test.describe('WF Auth journeys (UI)', () => {
     }
   });
 
-  test('TC-WF-02-003 an invalid/expired session is redirected to /login @ui @P1 @security', async ({ page, config }, info) => {
+  test('TC-WF-02-003 an invalid/expired session is redirected to /login @ui @P1 @security', async ({
+    page,
+    config,
+  }, info) => {
     meta(info, 'WF-02', ['AUTH-002', 'AUTHZ-001']);
     const { seedExpiredSession } = await import('../fixtures/uiTest.js');
     await seedExpiredSession(page);
@@ -78,7 +84,11 @@ test.describe('WF Auth journeys (UI)', () => {
     await expect(new LoginPage(page).submit).toBeVisible();
   });
 
-  test('TC-WF-03-001 password reset via UI, then login with the new password @ui @P1 @integration', async ({ page, config, api }, info) => {
+  test('TC-WF-03-001 password reset via UI, then login with the new password @ui @P1 @integration', async ({
+    page,
+    config,
+    api,
+  }, info) => {
     meta(info, 'WF-03', ['AUTH-004']);
     const u = makeUser('subscriber');
     // setup via API so we have the user id (reset JWT carries only `sub`, no email claim).
@@ -104,7 +114,10 @@ test.describe('WF Auth journeys (UI)', () => {
     }
   });
 
-  test('TC-WF-04-001 email verification link confirms the account @ui @P2 @integration', async ({ page, config }, info) => {
+  test('TC-WF-04-001 email verification link confirms the account @ui @P2 @integration', async ({
+    page,
+    config,
+  }, info) => {
     meta(info, 'WF-04', ['AUTH-005']);
     const u = makeUser('subscriber');
     const reg = new RegisterPage(page);

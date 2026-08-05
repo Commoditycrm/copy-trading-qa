@@ -18,7 +18,9 @@ test.describe('AUTH-002 Login', () => {
     expect(body.refresh_token).toBeTruthy();
   });
 
-  test('TC-AUTH-002-002 wrong password returns 401 invalid_credentials @auth @api @P1 @negative', async ({ api }, info) => {
+  test('TC-AUTH-002-002 wrong password returns 401 invalid_credentials @auth @api @P1 @negative', async ({
+    api,
+  }, info) => {
     meta(info, 'AUTH-002');
     const u = makeUser('subscriber');
     expect((await auth.register(api, u)).status()).toBe(201);
@@ -27,7 +29,9 @@ test.describe('AUTH-002 Login', () => {
     expect((await res.json()).detail).toBe('invalid_credentials');
   });
 
-  test('TC-AUTH-002-004 repeated failures trip the per-email lockout (429) @auth @api @P1 @recovery', async ({ api }, info) => {
+  test('TC-AUTH-002-004 repeated failures trip the per-email lockout (429) @auth @api @P1 @recovery', async ({
+    api,
+  }, info) => {
     meta(info, 'AUTH-002');
     const u = makeUser('subscriber');
     expect((await auth.register(api, u)).status()).toBe(201);
@@ -43,7 +47,9 @@ test.describe('AUTH-002 Login', () => {
     expect(sawLock, 'expected a 429 lockout within 10 failed attempts (Redis limiter must be up)').toBe(true);
   });
 
-  test('TC-AUTH-002-005 unverified email can still log in (soft verification) @auth @api @P2 @data-integrity', async ({ api }, info) => {
+  test('TC-AUTH-002-005 unverified email can still log in (soft verification) @auth @api @P2 @data-integrity', async ({
+    api,
+  }, info) => {
     meta(info, 'AUTH-002', ['AUTH-005']);
     const u = makeUser('subscriber');
     expect((await auth.register(api, u)).status()).toBe(201); // unverified
@@ -51,7 +57,10 @@ test.describe('AUTH-002 Login', () => {
     expect(res.status()).toBe(200);
   });
 
-  test('TC-AUTH-002-003 inactive user cannot log in (403 user_inactive) @auth @api @P1 @permission', async ({ api, config }, info) => {
+  test('TC-AUTH-002-003 inactive user cannot log in (403 user_inactive) @auth @api @P1 @permission', async ({
+    api,
+    config,
+  }, info) => {
     meta(info, 'AUTH-002', ['ADMIN-001']);
     const u = makeUser('subscriber');
     expect((await auth.register(api, u)).status()).toBe(201);

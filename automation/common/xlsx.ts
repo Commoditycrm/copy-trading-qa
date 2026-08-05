@@ -30,7 +30,10 @@ export async function parseXlsx(res: APIResponse): Promise<ParsedSheet> {
 }
 
 /** Locate the column-header row (first row whose first cell === marker) and split off the data rows. */
-export function locateTable(sheet: ParsedSheet, marker: string): { headers: string[]; dataRows: ParsedSheet['rows']; headerIndex: number } {
+export function locateTable(
+  sheet: ParsedSheet,
+  marker: string,
+): { headers: string[]; dataRows: ParsedSheet['rows']; headerIndex: number } {
   const i = sheet.rows.findIndex((r) => String(r[0] ?? '') === marker);
   if (i < 0) return { headers: [], dataRows: [], headerIndex: -1 };
   return {

@@ -21,7 +21,10 @@ async function placeAndGetId(api: Parameters<typeof trades.placeOrder>[0], token
 test.describe('COPY-001 Fanout', () => {
   test.skip(({ config }) => config.envName !== 'local', 'Fanout/DB assertions require the local stack.');
 
-  test('TC-COPY-001-001 one mirror order per active subscriber @trading @api @P0 @integration', async ({ api, config }, info) => {
+  test('TC-COPY-001-001 one mirror order per active subscriber @trading @api @P0 @integration', async ({
+    api,
+    config,
+  }, info) => {
     meta(info, 'COPY-001', ['TRADE-001']);
     const p = await provisionFanout(api, config, [{ multiplier: 1 }, { multiplier: 1 }]);
     try {
@@ -37,7 +40,10 @@ test.describe('COPY-001 Fanout', () => {
     }
   });
 
-  test('TC-COPY-001-002 quantity scaling by multiplier @trading @api @P0 @data-integrity', async ({ api, config }, info) => {
+  test('TC-COPY-001-002 quantity scaling by multiplier @trading @api @P0 @data-integrity', async ({
+    api,
+    config,
+  }, info) => {
     meta(info, 'COPY-001');
     const p = await provisionFanout(api, config, [{ multiplier: 3 }]);
     try {
@@ -51,7 +57,10 @@ test.describe('COPY-001 Fanout', () => {
     }
   });
 
-  test('TC-COPY-001-003 copy-disabled subscriber gets no mirror @trading @api @P0 @data-integrity', async ({ api, config }, info) => {
+  test('TC-COPY-001-003 copy-disabled subscriber gets no mirror @trading @api @P0 @data-integrity', async ({
+    api,
+    config,
+  }, info) => {
     meta(info, 'COPY-001');
     // A copies, B disabled — A's mirror proves fanout ran; B's absence proves the copy_enabled filter.
     const p = await provisionFanout(api, config, [{ copy_enabled: true }, { copy_enabled: false }]);
@@ -62,13 +71,19 @@ test.describe('COPY-001 Fanout', () => {
       await expect.poll(() => childOrders(config, orderId).length, { timeout: 20000 }).toBe(1);
       const kids = childOrders(config, orderId);
       expect(kids[0]!.userId).toBe(a.user_id);
-      expect(kids.some((k) => k.userId === b.user_id), 'disabled subscriber must have no mirror').toBe(false);
+      expect(
+        kids.some((k) => k.userId === b.user_id),
+        'disabled subscriber must have no mirror',
+      ).toBe(false);
     } finally {
       p.cleanup();
     }
   });
 
-  test('TC-COPY-001-005 subscriber with no connected broker is skipped cleanly @trading @api @P1 @recovery', async ({ api, config }, info) => {
+  test('TC-COPY-001-005 subscriber with no connected broker is skipped cleanly @trading @api @P1 @recovery', async ({
+    api,
+    config,
+  }, info) => {
     meta(info, 'COPY-001');
     // A has a broker, B has none — fanout must still complete for A and not crash on B.
     const p = await provisionFanout(api, config, [{ broker: true }, { broker: false }]);

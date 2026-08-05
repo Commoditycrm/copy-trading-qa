@@ -62,7 +62,10 @@ export async function evidenceOf(method: string, url: string, res: APIResponse):
     body = await res.text();
   }
   return JSON.stringify(
-    { request: { method, url }, response: { status: res.status(), headers: redactHeaders(res.headers()), body: redact(body) } },
+    {
+      request: { method, url },
+      response: { status: res.status(), headers: redactHeaders(res.headers()), body: redact(body) },
+    },
     null,
     2,
   );

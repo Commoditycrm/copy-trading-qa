@@ -18,11 +18,15 @@ const XLSX_MEDIA = 'application/vnd.openxmlformats-officedocument.spreadsheetml.
 test.describe('Trade export (xlsx)', () => {
   test.skip(({ config }) => config.envName !== 'local', 'Requires the local stack.');
 
-  test('TC-EXPORT-001-001 export produces a valid xlsx with the expected columns + rows + audit side-effect @portfolio @api @P1 @integration', async ({ api, config }, info) => {
+  test('TC-EXPORT-001-001 export produces a valid xlsx with the expected columns + rows + audit side-effect @portfolio @api @P1 @integration', async ({
+    api,
+    config,
+  }, info) => {
     meta(info, 'EXPORT-001');
     const p = await provisionFanout(api, config, []);
     try {
-      for (const s of ['AAA', 'BBB', 'CCC']) await trades.placeOrder(api, p.traderAccess, p.brokerAccountId, marketOrder(s, 3));
+      for (const s of ['AAA', 'BBB', 'CCC'])
+        await trades.placeOrder(api, p.traderAccess, p.brokerAccountId, marketOrder(s, 3));
       const res = await exp.exportTrades(api, p.traderAccess);
       expect(res.status()).toBe(200);
       expect(res.headers()['content-type']).toContain(XLSX_MEDIA);
@@ -40,14 +44,21 @@ test.describe('Trade export (xlsx)', () => {
     }
   });
 
-  test('TC-EXPORT-001-003 export has no credential columns; count endpoint matches @portfolio @api @P1 @security', async ({ api, config }, info) => {
+  test('TC-EXPORT-001-003 export has no credential columns; count endpoint matches @portfolio @api @P1 @security', async ({
+    api,
+    config,
+  }, info) => {
     meta(info, 'EXPORT-001');
     const p = await provisionFanout(api, config, []);
     try {
-      for (const s of ['AAA', 'BBB']) await trades.placeOrder(api, p.traderAccess, p.brokerAccountId, marketOrder(s, 3));
+      for (const s of ['AAA', 'BBB'])
+        await trades.placeOrder(api, p.traderAccess, p.brokerAccountId, marketOrder(s, 3));
       const { headers } = locateTable(await parseXlsx(await exp.exportTrades(api, p.traderAccess)), 'Placed At (EST)');
       for (const banned of ['Credential', 'API Key', 'Secret', 'Encrypted', 'Password']) {
-        expect(headers.some((h) => h.toLowerCase().includes(banned.toLowerCase())), `no ${banned} column`).toBe(false);
+        expect(
+          headers.some((h) => h.toLowerCase().includes(banned.toLowerCase())),
+          `no ${banned} column`,
+        ).toBe(false);
       }
       const count = await (await exp.exportCount(api, p.traderAccess)).json();
       expect(count.count).toBeGreaterThanOrEqual(2);
@@ -56,7 +67,10 @@ test.describe('Trade export (xlsx)', () => {
     }
   });
 
-  test('TC-EXPORT-001-002 export for another user is admin-only (403 for a non-admin) @portfolio @api @P0 @security', async ({ api, config }, info) => {
+  test('TC-EXPORT-001-002 export for another user is admin-only (403 for a non-admin) @portfolio @api @P0 @security', async ({
+    api,
+    config,
+  }, info) => {
     meta(info, 'EXPORT-001');
     const p = await provisionFanout(api, config, []);
     const other = await auth.registerAndLogin(api, makeUser('trader'));

@@ -66,6 +66,9 @@ test.describe('PERF SSE concurrency', () => {
     }
     await info.attach('sse-concurrency.json', { body: JSON.stringify(rows, null, 2), contentType: 'application/json' });
     // sanity: the large majority of connections succeed at every level
-    for (const r of rows) expect((r.connected as number), `connect rate @${r.clients}`).toBeGreaterThanOrEqual(Math.floor((r.clients as number) * 0.9));
+    for (const r of rows)
+      expect(r.connected as number, `connect rate @${r.clients}`).toBeGreaterThanOrEqual(
+        Math.floor((r.clients as number) * 0.9),
+      );
   });
 });

@@ -11,7 +11,11 @@ import { sideOrderCount } from '../../common/tradingSetup.js';
 test.describe('WF-10/11 Trade + mirror (UI)', () => {
   test.skip(({ config }) => config.envName !== 'local', 'UI E2E runs against the local full stack.');
 
-  test('TC-WF-10-001 trader places a market order via the trade panel and the subscriber is mirrored @ui @P1 @integration', async ({ page, config, api }, info) => {
+  test('TC-WF-10-001 trader places a market order via the trade panel and the subscriber is mirrored @ui @P1 @integration', async ({
+    page,
+    config,
+    api,
+  }, info) => {
     meta(info, 'WF-10', ['TRADE-001', 'COPY-001']);
     const p = await provisionFanout(api, config, [{}]);
     try {

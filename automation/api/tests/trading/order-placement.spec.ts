@@ -14,7 +14,10 @@ const SYMBOL = 'AAPL';
 test.describe('TRADE-001 Order placement', () => {
   test.skip(({ config }) => config.envName !== 'local', 'Fanout/DB assertions require the local stack.');
 
-  test('TC-TRADE-001-001 trader market BUY is accepted and recorded exactly once @trading @api @P1 @integration', async ({ api, config }, info) => {
+  test('TC-TRADE-001-001 trader market BUY is accepted and recorded exactly once @trading @api @P1 @integration', async ({
+    api,
+    config,
+  }, info) => {
     meta(info, 'TRADE-001');
     const p = await provisionFanout(api, config, []);
     try {
@@ -30,7 +33,10 @@ test.describe('TRADE-001 Order placement', () => {
     }
   });
 
-  test('TC-TRADE-001-003 missing required fields are rejected 422 @trading @api @P1 @negative', async ({ api, config }, info) => {
+  test('TC-TRADE-001-003 missing required fields are rejected 422 @trading @api @P1 @negative', async ({
+    api,
+    config,
+  }, info) => {
     meta(info, 'TRADE-001');
     const p = await provisionFanout(api, config, []);
     try {
@@ -46,7 +52,10 @@ test.describe('TRADE-001 Order placement', () => {
     }
   });
 
-  test('TC-TRADE-001-005 placing while trading disabled returns 409 (kill-switch) @trading @api @P1 @security', async ({ api, config }, info) => {
+  test('TC-TRADE-001-005 placing while trading disabled returns 409 (kill-switch) @trading @api @P1 @security', async ({
+    api,
+    config,
+  }, info) => {
     meta(info, 'TRADE-001');
     const p = await provisionFanout(api, config, []);
     try {
@@ -59,7 +68,10 @@ test.describe('TRADE-001 Order placement', () => {
     }
   });
 
-  test('TC-TRADE-001-006 placing on a broker account not owned by the trader returns 404 @trading @api @P1 @security', async ({ api, config }, info) => {
+  test('TC-TRADE-001-006 placing on a broker account not owned by the trader returns 404 @trading @api @P1 @security', async ({
+    api,
+    config,
+  }, info) => {
     meta(info, 'TRADE-001', ['AUTHZ-001']);
     const p = await provisionFanout(api, config, []);
     try {
@@ -72,7 +84,10 @@ test.describe('TRADE-001 Order placement', () => {
     }
   });
 
-  test('TC-TRADE-001-007 identical orders are deduped — one parent row (advisory lock + 3s window) @trading @api @P0 @data-integrity', async ({ api, config }, info) => {
+  test('TC-TRADE-001-007 identical orders are deduped — one parent row (advisory lock + 3s window) @trading @api @P0 @data-integrity', async ({
+    api,
+    config,
+  }, info) => {
     meta(info, 'TRADE-001');
     const p = await provisionFanout(api, config, []);
     try {

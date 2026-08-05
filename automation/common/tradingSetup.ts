@@ -15,7 +15,8 @@ const compose = resolve(here, '../local-stack/docker-compose.qa.yml');
 const seedScript = resolve(here, '../local-stack/seed_trading.py');
 
 function assertLocal(cfg: QaConfig): void {
-  if (cfg.envName !== 'local') throw new Error(`[SAFETY] tradingSetup refuses to run in env=${cfg.envName} (local only)`);
+  if (cfg.envName !== 'local')
+    throw new Error(`[SAFETY] tradingSetup refuses to run in env=${cfg.envName} (local only)`);
 }
 function dc(args: string, input?: string): string {
   try {
@@ -64,9 +65,13 @@ export interface ChildOrder {
 export function seedFanout(cfg: QaConfig, traderEmail: string, subs: SubSpec[]): FanoutSeed {
   assertLocal(cfg);
   const all = [traderEmail, ...subs.map((s) => s.email)];
-  for (const e of all) if (!e.endsWith('@qa.kopyya.dev')) throw new Error(`[SAFETY] tradingSetup only operates on @qa.kopyya.dev users (got ${e})`);
+  for (const e of all)
+    if (!e.endsWith('@qa.kopyya.dev'))
+      throw new Error(`[SAFETY] tradingSetup only operates on @qa.kopyya.dev users (got ${e})`);
 
-  const specB64 = Buffer.from(JSON.stringify({ trader_email: traderEmail, subscribers: subs, run_id: RUN_ID })).toString('base64');
+  const specB64 = Buffer.from(
+    JSON.stringify({ trader_email: traderEmail, subscribers: subs, run_id: RUN_ID }),
+  ).toString('base64');
   dc(`cp "${seedScript}" backend:/tmp/qa_seed_trading.py`);
   // PYTHONPATH=/app: running `python /tmp/x.py` puts /tmp (not the app root) on sys.path.
   const out = dc(`exec -T -e PYTHONPATH=/app -e SEED_SPEC_B64=${specB64} backend python /tmp/qa_seed_trading.py`);
@@ -121,8 +126,27 @@ export function orderRow(cfg: QaConfig, orderId: string): OrderRow {
     `SELECT lower(status::text)||'|'||COALESCE(reject_reason,'')||'|'||filled_quantity||'|'||is_closing||'|'||` +
       `retry_count||'|'||COALESCE(retry_at::text,'')||'|'||quantity||'|'||lower(side::text) FROM orders WHERE id='${orderId}'`,
   );
-  const [status = '', reject_reason = '', filled_quantity = '', is_closing = '', retry_count = '', retryAt = '', quantity = '', side = ''] = r.split('|');
-  return { status, reject_reason, filled_quantity, quantity, side, is_closing: is_closing === 't', retry_count, hasRetryAt: retryAt !== '', retryAt };
+  const [
+    status = '',
+    reject_reason = '',
+    filled_quantity = '',
+    is_closing = '',
+    retry_count = '',
+    retryAt = '',
+    quantity = '',
+    side = '',
+  ] = r.split('|');
+  return {
+    status,
+    reject_reason,
+    filled_quantity,
+    quantity,
+    side,
+    is_closing: is_closing === 't',
+    retry_count,
+    hasRetryAt: retryAt !== '',
+    retryAt,
+  };
 }
 
 /** Newest order id for a user+symbol other than `excludeId` (empty if none) — e.g. a subscriber's close mirror. */
@@ -163,10 +187,12 @@ export function subscriberPickedAtSet(cfg: QaConfig, orderId: string): boolean {
 /** Count a trader's real ENTRY parents (excludes copy-mirrors and bracket exit legs). */
 export function traderEntryCount(cfg: QaConfig, userId: string, symbol: string): number {
   assertLocal(cfg);
-  return Number(psql(
-    `SELECT count(*) FROM orders WHERE user_id='${userId}' AND symbol='${symbol}' ` +
-      `AND parent_order_id IS NULL AND bracket_parent_id IS NULL`,
-  ) || '0');
+  return Number(
+    psql(
+      `SELECT count(*) FROM orders WHERE user_id='${userId}' AND symbol='${symbol}' ` +
+        `AND parent_order_id IS NULL AND bracket_parent_id IS NULL`,
+    ) || '0',
+  );
 }
 
 /** Count bracket exit legs under an entry (bracket_parent_id = entryId). */
@@ -178,15 +204,19 @@ export function bracketLegCount(cfg: QaConfig, entryId: string): number {
 /** Count / sum a user's orders on one side for a symbol (concurrent-close bounds). */
 export function sideOrderCount(cfg: QaConfig, userId: string, symbol: string, side: 'buy' | 'sell'): number {
   assertLocal(cfg);
-  return Number(psql(
-    `SELECT count(*) FROM orders WHERE user_id='${userId}' AND symbol='${symbol}' AND lower(side::text)='${side}'`,
-  ) || '0');
+  return Number(
+    psql(
+      `SELECT count(*) FROM orders WHERE user_id='${userId}' AND symbol='${symbol}' AND lower(side::text)='${side}'`,
+    ) || '0',
+  );
 }
 export function sideQtySum(cfg: QaConfig, userId: string, symbol: string, side: 'buy' | 'sell'): number {
   assertLocal(cfg);
-  return Number(psql(
-    `SELECT COALESCE(sum(quantity),0) FROM orders WHERE user_id='${userId}' AND symbol='${symbol}' AND lower(side::text)='${side}'`,
-  ) || '0');
+  return Number(
+    psql(
+      `SELECT COALESCE(sum(quantity),0) FROM orders WHERE user_id='${userId}' AND symbol='${symbol}' AND lower(side::text)='${side}'`,
+    ) || '0',
+  );
 }
 
 /** The most recent parent order id for a trader+symbol (empty if none). */
@@ -294,7 +324,8 @@ export function brokerAccountExists(cfg: QaConfig, accountId: string): boolean {
 /** Flip a trader's kill-switch (trading_enabled) — for the disabled-trading 409 path. */
 export function setTradingEnabled(cfg: QaConfig, traderEmail: string, enabled: boolean): void {
   assertLocal(cfg);
-  if (!traderEmail.endsWith('@qa.kopyya.dev')) throw new Error(`[SAFETY] only @qa.kopyya.dev traders (got ${traderEmail})`);
+  if (!traderEmail.endsWith('@qa.kopyya.dev'))
+    throw new Error(`[SAFETY] only @qa.kopyya.dev traders (got ${traderEmail})`);
   psql(
     `UPDATE trader_settings SET trading_enabled=${enabled ? 'true' : 'false'} ` +
       `WHERE user_id=(SELECT id FROM users WHERE email='${traderEmail}')`,

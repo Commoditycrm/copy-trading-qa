@@ -21,7 +21,10 @@ function noStackTrace(body: unknown): boolean {
 test.describe('SA-001 auth token hardening', () => {
   test.skip(({ config }) => config.envName !== 'local', 'Security suite runs against the local stack.');
 
-  test('SA-001 every malformed/forged/stale token is 401 (never 500) with no stack-trace leak @security @api @P0 @auth', async ({ api, config }, info) => {
+  test('SA-001 every malformed/forged/stale token is 401 (never 500) with no stack-trace leak @security @api @P0 @auth', async ({
+    api,
+    config,
+  }, info) => {
     meta(info, 'AUTHZ-001', ['AUTH-002']);
     const u = makeUser('subscriber');
     const acct = await registerAndLogin(api, u);
@@ -32,12 +35,30 @@ test.describe('SA-001 auth token hardening', () => {
     const cases: Array<{ name: string; token: string | null }> = [
       { name: 'no token', token: null },
       { name: 'garbage string', token: 'not.a.jwt' },
-      { name: 'valid shape, wrong signature', token: jwt.sign({ sub: realUuid, role: 'subscriber', type: 'access' }, 'wrong-secret', { algorithm: 'HS256', expiresIn: 600 }) },
-      { name: 'alg=none', token: jwt.sign({ sub: realUuid, role: 'subscriber', type: 'access' }, '', { algorithm: 'none' }) },
+      {
+        name: 'valid shape, wrong signature',
+        token: jwt.sign({ sub: realUuid, role: 'subscriber', type: 'access' }, 'wrong-secret', {
+          algorithm: 'HS256',
+          expiresIn: 600,
+        }),
+      },
+      {
+        name: 'alg=none',
+        token: jwt.sign({ sub: realUuid, role: 'subscriber', type: 'access' }, '', { algorithm: 'none' }),
+      },
       { name: 'expired', token: mintExpiredAccess(config, realUuid, 'subscriber') },
       { name: 'wrong type (refresh as access)', token: mintWrongType(config, realUuid, 'refresh') },
-      { name: 'missing sub', token: jwt.sign({ role: 'subscriber', type: 'access' }, secret, { algorithm: 'HS256', expiresIn: 600 }) },
-      { name: 'privilege claim admin (forged role)', token: jwt.sign({ sub: realUuid, role: 'admin', type: 'access' }, secret, { algorithm: 'HS256', expiresIn: 600 }) },
+      {
+        name: 'missing sub',
+        token: jwt.sign({ role: 'subscriber', type: 'access' }, secret, { algorithm: 'HS256', expiresIn: 600 }),
+      },
+      {
+        name: 'privilege claim admin (forged role)',
+        token: jwt.sign({ sub: realUuid, role: 'admin', type: 'access' }, secret, {
+          algorithm: 'HS256',
+          expiresIn: 600,
+        }),
+      },
       { name: 'non-existent sub (valid uuid)', token: mintAccess(config, ghostUuid, 'subscriber') },
     ];
     try {
@@ -61,7 +82,10 @@ test.describe('SA-001 auth token hardening', () => {
     }
   });
 
-  test('SA-002 a deactivated user\'s valid token can no longer access protected resources @security @api @P1 @auth', async ({ api, config }, info) => {
+  test("SA-002 a deactivated user's valid token can no longer access protected resources @security @api @P1 @auth", async ({
+    api,
+    config,
+  }, info) => {
     meta(info, 'AUTHZ-001', ['ADMIN-001']);
     const u = makeUser('subscriber');
     const acct = await registerAndLogin(api, u);

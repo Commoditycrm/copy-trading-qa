@@ -9,13 +9,20 @@ import { marketOrder } from '../../clients/tradesApi.js';
 import * as s from '../../clients/settingsApi.js';
 import { provisionFanout } from '../trading/helpers.js';
 import {
-  subSetting, setSubSettingRaw, subscriberCacheExists, auditByActor, childOrders,
+  subSetting,
+  setSubSettingRaw,
+  subscriberCacheExists,
+  auditByActor,
+  childOrders,
 } from '../../../common/tradingSetup.js';
 
 test.describe('Risk-control settings', () => {
   test.skip(({ config }) => config.envName !== 'local', 'Requires the local stack.');
 
-  test('TC-RISK-001-001 set daily-loss-limit-pct persists + audits + busts cache @risk @api @P1 @data-integrity', async ({ api, config }, info) => {
+  test('TC-RISK-001-001 set daily-loss-limit-pct persists + audits + busts cache @risk @api @P1 @data-integrity', async ({
+    api,
+    config,
+  }, info) => {
     meta(info, 'RISK-001');
     const p = await provisionFanout(api, config, [{}]);
     try {
@@ -29,7 +36,10 @@ test.describe('Risk-control settings', () => {
     }
   });
 
-  test('TC-RISK-001-002 percentage limits enforce gt=0 le=100 boundaries @risk @api @P1 @boundary', async ({ api, config }, info) => {
+  test('TC-RISK-001-002 percentage limits enforce gt=0 le=100 boundaries @risk @api @P1 @boundary', async ({
+    api,
+    config,
+  }, info) => {
     meta(info, 'RISK-001');
     const p = await provisionFanout(api, config, [{}]);
     try {
@@ -42,7 +52,10 @@ test.describe('Risk-control settings', () => {
     }
   });
 
-  test('TC-RISK-001-005 max-account-pct enforces gt=0 le=100 and persists @risk @api @P1 @boundary', async ({ api, config }, info) => {
+  test('TC-RISK-001-005 max-account-pct enforces gt=0 le=100 and persists @risk @api @P1 @boundary', async ({
+    api,
+    config,
+  }, info) => {
     meta(info, 'RISK-001');
     const p = await provisionFanout(api, config, [{}]);
     try {
@@ -56,7 +69,10 @@ test.describe('Risk-control settings', () => {
     }
   });
 
-  test('TC-RISK-002-001 auto-liquidation-limit enforces gt=0 and persists @risk @api @P1 @boundary', async ({ api, config }, info) => {
+  test('TC-RISK-002-001 auto-liquidation-limit enforces gt=0 and persists @risk @api @P1 @boundary', async ({
+    api,
+    config,
+  }, info) => {
     meta(info, 'RISK-002');
     const p = await provisionFanout(api, config, [{}]);
     try {
@@ -69,7 +85,10 @@ test.describe('Risk-control settings', () => {
     }
   });
 
-  test('TC-RISK-003-001 position-tp-pct boundary (gt=0 le=1000) + persist @risk @api @P1 @boundary', async ({ api, config }, info) => {
+  test('TC-RISK-003-001 position-tp-pct boundary (gt=0 le=1000) + persist @risk @api @P1 @boundary', async ({
+    api,
+    config,
+  }, info) => {
     meta(info, 'RISK-003');
     const p = await provisionFanout(api, config, [{}]);
     try {
@@ -83,7 +102,10 @@ test.describe('Risk-control settings', () => {
     }
   });
 
-  test('TC-RISK-003-002 position-sl-pct boundary (gt=0 le=100) + persist @risk @api @P1 @boundary', async ({ api, config }, info) => {
+  test('TC-RISK-003-002 position-sl-pct boundary (gt=0 le=100) + persist @risk @api @P1 @boundary', async ({
+    api,
+    config,
+  }, info) => {
     meta(info, 'RISK-003');
     const p = await provisionFanout(api, config, [{}]);
     try {
@@ -111,7 +133,10 @@ test.describe('Risk-control settings', () => {
     }
   });
 
-  test('TC-RISK-004-004 symbol filter is normalized (uppercase, trimmed, de-duplicated) @risk @api @P2 @data-integrity', async ({ api, config }, info) => {
+  test('TC-RISK-004-004 symbol filter is normalized (uppercase, trimmed, de-duplicated) @risk @api @P2 @data-integrity', async ({
+    api,
+    config,
+  }, info) => {
     meta(info, 'RISK-004');
     const p = await provisionFanout(api, config, [{}]);
     try {
@@ -138,7 +163,10 @@ test.describe('Risk-control settings', () => {
     }
   });
 
-  test('TC-RISK-006-001 eod-autoclose minutes clamp to 1..30 @risk @api @P2 @boundary', async ({ api, config }, info) => {
+  test('TC-RISK-006-001 eod-autoclose minutes clamp to 1..30 @risk @api @P2 @boundary', async ({
+    api,
+    config,
+  }, info) => {
     meta(info, 'RISK-006');
     const p = await provisionFanout(api, config, [{}]);
     try {
@@ -153,7 +181,10 @@ test.describe('Risk-control settings', () => {
     }
   });
 
-  test('TC-COPY-001-011 multiplier boundary (gt=0 le=10) + persist @risk @api @P1 @boundary', async ({ api, config }, info) => {
+  test('TC-COPY-001-011 multiplier boundary (gt=0 le=10) + persist @risk @api @P1 @boundary', async ({
+    api,
+    config,
+  }, info) => {
     meta(info, 'COPY-001');
     const p = await provisionFanout(api, config, [{}]);
     try {
@@ -167,7 +198,10 @@ test.describe('Risk-control settings', () => {
     }
   });
 
-  test('TC-COPY-003-008 retry interval enum validation + max-attempts boundary @risk @api @P2 @boundary', async ({ api, config }, info) => {
+  test('TC-COPY-003-008 retry interval enum validation + max-attempts boundary @risk @api @P2 @boundary', async ({
+    api,
+    config,
+  }, info) => {
     meta(info, 'COPY-003');
     const p = await provisionFanout(api, config, [{}]);
     try {
@@ -182,7 +216,10 @@ test.describe('Risk-control settings', () => {
     }
   });
 
-  test('TC-RISK-001-011 a cache-busting setting change invalidates cache:subs:<trader> @risk @api @P1 @data-integrity', async ({ api, config }, info) => {
+  test('TC-RISK-001-011 a cache-busting setting change invalidates cache:subs:<trader> @risk @api @P1 @data-integrity', async ({
+    api,
+    config,
+  }, info) => {
     meta(info, 'RISK-001');
     const p = await provisionFanout(api, config, [{}]);
     try {
@@ -198,7 +235,10 @@ test.describe('Risk-control settings', () => {
     }
   });
 
-  test('TC-RISK-005-005 max-per-contract change does NOT bust the subscriber cache @risk @api @P2 @data-integrity', async ({ api, config }, info) => {
+  test('TC-RISK-005-005 max-per-contract change does NOT bust the subscriber cache @risk @api @P2 @data-integrity', async ({
+    api,
+    config,
+  }, info) => {
     meta(info, 'RISK-005');
     const p = await provisionFanout(api, config, [{}]);
     try {
@@ -207,13 +247,19 @@ test.describe('Risk-control settings', () => {
       await expect.poll(() => childOrders(config, parent).length, { timeout: 20000 }).toBe(1);
       expect(subscriberCacheExists(config, p.traderId)).toBe(true);
       expect((await s.maxPerContract(api, p.subAccess[0]!, 5)).status()).toBe(200);
-      expect(subscriberCacheExists(config, p.traderId), 'documented divergence: max-per-contract does not bust cache').toBe(true);
+      expect(
+        subscriberCacheExists(config, p.traderId),
+        'documented divergence: max-per-contract does not bust cache',
+      ).toBe(true);
     } finally {
       p.cleanup();
     }
   });
 
-  test('TC-RISK-001-006 enabling copy clears the auto-pause and auto-liquidation markers @risk @api @P1 @recovery', async ({ api, config }, info) => {
+  test('TC-RISK-001-006 enabling copy clears the auto-pause and auto-liquidation markers @risk @api @P1 @recovery', async ({
+    api,
+    config,
+  }, info) => {
     meta(info, 'RISK-001', ['RISK-002']);
     const p = await provisionFanout(api, config, [{}]);
     try {
@@ -230,7 +276,10 @@ test.describe('Risk-control settings', () => {
     }
   });
 
-  test('TC-RISK-001-010 reset-to-defaults resets config but preserves follow/copy/pause/liquidation @risk @api @P1 @data-integrity', async ({ api, config }, info) => {
+  test('TC-RISK-001-010 reset-to-defaults resets config but preserves follow/copy/pause/liquidation @risk @api @P1 @data-integrity', async ({
+    api,
+    config,
+  }, info) => {
     meta(info, 'RISK-001');
     const p = await provisionFanout(api, config, [{ multiplier: 5 }]);
     try {

@@ -14,7 +14,10 @@ const today = () => new Date().toISOString().slice(0, 10);
 test.describe('Calendar / P&L', () => {
   test.skip(({ config }) => config.envName !== 'local', 'Requires the local stack + mock broker.');
 
-  test('TC-PNL-001-001 daily realized P&L reflects the day’s closed trades @portfolio @api @P1 @data-integrity', async ({ api, config }, info) => {
+  test('TC-PNL-001-001 daily realized P&L reflects the day’s closed trades @portfolio @api @P1 @data-integrity', async ({
+    api,
+    config,
+  }, info) => {
     meta(info, 'PNL-001');
     const mb = new MockBroker(config);
     const p = await provisionFanout(api, config, []);
@@ -31,7 +34,10 @@ test.describe('Calendar / P&L', () => {
     }
   });
 
-  test('TC-PNL-001-002 trader view-as a subscriber is authorized; others are refused @portfolio @api @P1 @security', async ({ api, config }, info) => {
+  test('TC-PNL-001-002 trader view-as a subscriber is authorized; others are refused @portfolio @api @P1 @security', async ({
+    api,
+    config,
+  }, info) => {
     meta(info, 'PNL-001');
     const p = await provisionFanout(api, config, [{}]);
     const outsider = await auth.registerAndLogin(api, makeUser('subscriber'));
@@ -48,7 +54,10 @@ test.describe('Calendar / P&L', () => {
     }
   });
 
-  test('TC-PNL-001-005 range validation — from must be <= to (422) @portfolio @api @P2 @negative', async ({ api, config }, info) => {
+  test('TC-PNL-001-005 range validation — from must be <= to (422) @portfolio @api @P2 @negative', async ({
+    api,
+    config,
+  }, info) => {
     meta(info, 'PNL-001');
     const p = await provisionFanout(api, config, []);
     try {

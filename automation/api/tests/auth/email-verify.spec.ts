@@ -15,7 +15,9 @@ test.describe('AUTH-005 Email verification', () => {
     expect(r.status(), await r.text()).toBe(201);
     const id = (await r.json()).id as string;
     let token: string | null = null;
-    await expect.poll(() => (token = tokenForSubject({ email: u.email, userId: id, type: 'verify' })), { timeout: 15000 }).toBeTruthy();
+    await expect
+      .poll(() => (token = tokenForSubject({ email: u.email, userId: id, type: 'verify' })), { timeout: 15000 })
+      .toBeTruthy();
     expect((await auth.verifyEmail(api, token!)).status()).toBe(200);
     expect((await auth.verifyEmail(api, token!)).status()).toBe(200); // idempotent
     const login = await auth.login(api, u.email, u.password, u.clientIp);

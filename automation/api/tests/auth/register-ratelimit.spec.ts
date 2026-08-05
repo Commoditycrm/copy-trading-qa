@@ -9,7 +9,10 @@ import * as auth from '../../clients/authApi.js';
 import { delRateLimitKey } from '../../../common/localRedis.js';
 
 test.describe('AUTH-001 Register — rate limiting', () => {
-  test('TC-AUTH-001-008 registration IP throttle returns 429 + Retry-After @auth @api @P2 @recovery @requires-local', async ({ api, config }, info) => {
+  test('TC-AUTH-001-008 registration IP throttle returns 429 + Retry-After @auth @api @P2 @recovery @requires-local', async ({
+    api,
+    config,
+  }, info) => {
     meta(info, 'AUTH-001');
     test.skip(config.envName !== 'local', 'Rate-limit test runs only against the local stack (Redis key isolation).');
 

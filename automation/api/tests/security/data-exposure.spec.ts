@@ -22,7 +22,10 @@ const SECRET_MARKERS = [
 test.describe('SA-006 sensitive-data exposure', () => {
   test.skip(({ config }) => config.envName !== 'local', 'Security suite runs against the local stack.');
 
-  test('SA-006 no broker credentials / secrets / tokens appear in resource responses @security @api @P0 @data-exposure', async ({ api, config }, info) => {
+  test('SA-006 no broker credentials / secrets / tokens appear in resource responses @security @api @P0 @data-exposure', async ({
+    api,
+    config,
+  }, info) => {
     meta(info, 'BRK-001', ['NOTIF-001', 'POS-001']);
     const p = await provisionFanout(api, config, [{}]);
     try {

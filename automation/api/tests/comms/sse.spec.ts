@@ -15,7 +15,10 @@ import { deactivateUser, deleteUser } from '../../../common/localAdmin.js';
 test.describe('SSE event bus', () => {
   test.skip(({ config }) => config.envName !== 'local', 'Requires the local stack.');
 
-  test('TC-NOTIF-001-016 events are delivered to the owner only — cross-user channel isolation @comms @api @P0 @security', async ({ api, config }, info) => {
+  test('TC-NOTIF-001-016 events are delivered to the owner only — cross-user channel isolation @comms @api @P0 @security', async ({
+    api,
+    config,
+  }, info) => {
     meta(info, 'NOTIF-001');
     const mb = new MockBroker(config);
     const p = await provisionFanout(api, config, [{}, {}]);
@@ -35,7 +38,10 @@ test.describe('SSE event bus', () => {
     }
   });
 
-  test('TC-NOTIF-001-009 a created notification is delivered live as notification.created @comms @api @P1 @integration', async ({ api, config }, info) => {
+  test('TC-NOTIF-001-009 a created notification is delivered live as notification.created @comms @api @P1 @integration', async ({
+    api,
+    config,
+  }, info) => {
     meta(info, 'NOTIF-001');
     const mb = new MockBroker(config);
     const p = await provisionFanout(api, config, [{}]);
@@ -52,7 +58,10 @@ test.describe('SSE event bus', () => {
     }
   });
 
-  test('TC-NOTIF-001-021 events arrive in order with no duplicate delivery @comms @api @P1 @data-integrity', async ({ api, config }, info) => {
+  test('TC-NOTIF-001-021 events arrive in order with no duplicate delivery @comms @api @P1 @data-integrity', async ({
+    api,
+    config,
+  }, info) => {
     meta(info, 'NOTIF-001');
     const mb = new MockBroker(config);
     const p = await provisionFanout(api, config, [{}]);
@@ -60,7 +69,10 @@ test.describe('SSE event bus', () => {
     try {
       await c.waitForRaw((l) => l.startsWith(': connected'), 8000);
       const tag = `${RUN_ID}-ord`;
-      mb.emitSseBurst(p.subs[0]!.user_id, Array.from({ length: 5 }, (_, i) => ({ type: 'qa.seq', run_id: tag, seq: i })));
+      mb.emitSseBurst(
+        p.subs[0]!.user_id,
+        Array.from({ length: 5 }, (_, i) => ({ type: 'qa.seq', run_id: tag, seq: i })),
+      );
       await c.waitFor((e) => e.run_id === tag && e.seq === 4, 10000);
       const seqs = c.events.filter((e) => e.run_id === tag).map((e) => e.seq);
       expect(seqs, 'in order, exactly once').toEqual([0, 1, 2, 3, 4]);
@@ -70,7 +82,10 @@ test.describe('SSE event bus', () => {
     }
   });
 
-  test('TC-NOTIF-001-022 high-volume events are all delivered @comms @api @P2 @integration', async ({ api, config }, info) => {
+  test('TC-NOTIF-001-022 high-volume events are all delivered @comms @api @P2 @integration', async ({
+    api,
+    config,
+  }, info) => {
     meta(info, 'NOTIF-001');
     const mb = new MockBroker(config);
     const p = await provisionFanout(api, config, [{}]);
@@ -79,7 +94,10 @@ test.describe('SSE event bus', () => {
       await c.waitForRaw((l) => l.startsWith(': connected'), 8000);
       const tag = `${RUN_ID}-vol`;
       const N = 20;
-      mb.emitSseBurst(p.subs[0]!.user_id, Array.from({ length: N }, (_, i) => ({ type: 'qa.vol', run_id: tag, seq: i })));
+      mb.emitSseBurst(
+        p.subs[0]!.user_id,
+        Array.from({ length: N }, (_, i) => ({ type: 'qa.vol', run_id: tag, seq: i })),
+      );
       await c.waitFor((e) => e.run_id === tag && e.seq === N - 1, 15000);
       expect(c.events.filter((e) => e.run_id === tag).length).toBe(N);
     } finally {
@@ -88,7 +106,10 @@ test.describe('SSE event bus', () => {
     }
   });
 
-  test('TC-NOTIF-001-017 the stream emits a connected preamble and a heartbeat @comms @api @P2 @observability', async ({ api, config }, info) => {
+  test('TC-NOTIF-001-017 the stream emits a connected preamble and a heartbeat @comms @api @P2 @observability', async ({
+    api,
+    config,
+  }, info) => {
     meta(info, 'NOTIF-001');
     const p = await provisionFanout(api, config, [{}]);
     const c = await openSse(config, p.subAccess[0]!);
@@ -101,7 +122,10 @@ test.describe('SSE event bus', () => {
     }
   });
 
-  test('TC-NOTIF-001-018 SSE auth — invalid, expired, and inactive-user tokens are rejected (401) @comms @api @P0 @security', async ({ api, config }, info) => {
+  test('TC-NOTIF-001-018 SSE auth — invalid, expired, and inactive-user tokens are rejected (401) @comms @api @P0 @security', async ({
+    api,
+    config,
+  }, info) => {
     meta(info, 'NOTIF-001');
     const u = makeUser('subscriber');
     const acct = await auth.registerAndLogin(api, u);

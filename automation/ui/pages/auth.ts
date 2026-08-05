@@ -21,7 +21,12 @@ export class RegisterPage extends BasePage {
   // Trader-only, appears after selecting Trader. autocomplete=organization is the stable hook (no label assoc).
   readonly businessName = this.page.locator('input[autocomplete="organization"]');
 
-  async register(u: { email: string; password: string; role: 'trader' | 'subscriber'; business_name?: string }): Promise<void> {
+  async register(u: {
+    email: string;
+    password: string;
+    role: 'trader' | 'subscriber';
+    business_name?: string;
+  }): Promise<void> {
     // Fill email+password as one unit and re-fill if hydration wipes them, so both hold at submit time.
     await expect(async () => {
       await this.email.fill(u.email);

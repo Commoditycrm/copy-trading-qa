@@ -3,7 +3,7 @@
 Automated suites. **No test code authored yet** — framework and tests are added after tooling approval
 (`docs/TEST_STRATEGY.md` §9). Layout by discipline:
 
-**Language split (FINAL):** **TypeScript + Playwright** is the primary stack — **UI E2E** *and*
+**Language split (FINAL):** **TypeScript + Playwright** is the primary stack — **UI E2E** _and_
 **API black-box** (via `APIRequestContext`), plus `smoke`, `common`, and `accessibility`
 (`@axe-core/playwright`). **Python** is confined to `contract/` (Schemathesis OpenAPI fuzz) and any rare
 backend-specific integration test. **k6** (JS) for `performance`.

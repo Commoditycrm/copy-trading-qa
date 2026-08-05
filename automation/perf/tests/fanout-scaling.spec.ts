@@ -26,7 +26,9 @@ const compose = resolve(dirname(fileURLToPath(import.meta.url)), '../../local-st
 /** Invalidate the per-trader subscriber cache so the next fanout reads all N freshly-seeded subs from DB. */
 function clearSubsCache(traderId: string): void {
   try {
-    execSync(`docker compose -f "${compose}" exec -T redis redis-cli -a qaredispass DEL "cache:subs:${traderId}"`, { stdio: ['ignore', 'pipe', 'ignore'] });
+    execSync(`docker compose -f "${compose}" exec -T redis redis-cli -a qaredispass DEL "cache:subs:${traderId}"`, {
+      stdio: ['ignore', 'pipe', 'ignore'],
+    });
   } catch {
     /* best effort */
   }

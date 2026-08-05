@@ -48,10 +48,7 @@ export function emailLoggedTo(address: string, contains?: string): boolean {
 /** Extract the newest token value from a `?token=<jwt>` occurrence in the backend logs. */
 export function latestTokenFromLogs(kind: 'reset-password' | 'verify-email' | 'any' = 'any'): string | null {
   const logs = backendLogs();
-  const re =
-    kind === 'any'
-      ? /token=([A-Za-z0-9._-]{20,})/g
-      : new RegExp(`${kind}\\?token=([A-Za-z0-9._-]{20,})`, 'g');
+  const re = kind === 'any' ? /token=([A-Za-z0-9._-]{20,})/g : new RegExp(`${kind}\\?token=([A-Za-z0-9._-]{20,})`, 'g');
   let m: RegExpExecArray | null;
   let last: string | null = null;
   while ((m = re.exec(logs)) !== null) last = m[1] ?? last;
@@ -63,7 +60,11 @@ export function latestTokenFromLogs(kind: 'reset-password' | 'verify-email' | 'a
  * verify tokens carry `eml`, reset/verify tokens carry `sub` (the user id). Avoids picking another
  * concurrently-registered user's token from the shared sink.
  */
-export function tokenForSubject(match: { email?: string; userId?: string; type?: 'reset' | 'verify' | 'email_change' }): string | null {
+export function tokenForSubject(match: {
+  email?: string;
+  userId?: string;
+  type?: 'reset' | 'verify' | 'email_change';
+}): string | null {
   const logs = backendLogs();
   const re = /token=([A-Za-z0-9._-]{20,})/g;
   let m: RegExpExecArray | null;

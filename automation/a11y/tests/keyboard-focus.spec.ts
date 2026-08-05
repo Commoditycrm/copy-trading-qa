@@ -12,7 +12,11 @@ import { makeSession } from '../setup.js';
 test.describe('A11Y keyboard & focus', () => {
   test.skip(({ config }) => config.envName !== 'local', 'a11y suite runs against the local full stack.');
 
-  test('A11Y-KBD login is fully keyboard-operable (tab advances, Enter submits) @a11y @P1 @keyboard', async ({ page, api, config }, info) => {
+  test('A11Y-KBD login is fully keyboard-operable (tab advances, Enter submits) @a11y @P1 @keyboard', async ({
+    page,
+    api,
+    config,
+  }, info) => {
     meta(info, 'AUTH-002');
     const u = makeUser('subscriber');
     await registerAndLogin(api, u); // create the account to log into
@@ -36,7 +40,10 @@ test.describe('A11Y keyboard & focus', () => {
     }
   });
 
-  test('A11Y-DIALOG the notification menu opens/closes by keyboard and returns focus @a11y @P1 @focus', async ({ page, config }, info) => {
+  test('A11Y-DIALOG the notification menu opens/closes by keyboard and returns focus @a11y @P1 @focus', async ({
+    page,
+    config,
+  }, info) => {
     meta(info, 'NOTIF-001');
     const s = await makeSession('subscriber');
     try {

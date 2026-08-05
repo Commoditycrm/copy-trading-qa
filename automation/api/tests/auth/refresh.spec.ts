@@ -20,7 +20,10 @@ test.describe('AUTH-003 Refresh', () => {
     expect((await auth.me(api, body.access_token)).status()).toBe(200);
   });
 
-  test('TC-AUTH-003-002 malformed sub — DEFECT CONFIRM (expected 401, currently 500) @auth @api @P1 @negative', async ({ api, config }, info) => {
+  test('TC-AUTH-003-002 malformed sub — DEFECT CONFIRM (expected 401, currently 500) @auth @api @P1 @negative', async ({
+    api,
+    config,
+  }, info) => {
     meta(info, 'AUTH-003');
     const forged = mintMalformedSub(config); // sub = "not-a-uuid"
     const res = await auth.refresh(api, forged);
@@ -28,11 +31,17 @@ test.describe('AUTH-003 Refresh', () => {
     await info.attach('observed-status', { body: String(res.status()), contentType: 'text/plain' });
     expect([401, 500]).toContain(res.status());
     if (res.status() === 500) {
-      info.annotations.push({ type: 'potential_defect', description: 'refresh malformed-sub returns 500 (expected 401) — baseline §27' });
+      info.annotations.push({
+        type: 'potential_defect',
+        description: 'refresh malformed-sub returns 500 (expected 401) — baseline §27',
+      });
     }
   });
 
-  test('TC-AUTH-003-003 wrong token type (access as refresh) → 401 @auth @api @P1 @negative', async ({ api, config }, info) => {
+  test('TC-AUTH-003-003 wrong token type (access as refresh) → 401 @auth @api @P1 @negative', async ({
+    api,
+    config,
+  }, info) => {
     meta(info, 'AUTH-003');
     // A valid access token presented on the refresh endpoint.
     const access = mintAccess(config, '00000000-0000-0000-0000-000000000001', 'subscriber');
@@ -50,7 +59,9 @@ test.describe('AUTH-003 Refresh', () => {
     expect(res.status()).toBe(401);
   });
 
-  test('TC-AUTH-003-005 old refresh token still valid after rotation (no revocation) @auth @api @P2 @security', async ({ api }, info) => {
+  test('TC-AUTH-003-005 old refresh token still valid after rotation (no revocation) @auth @api @P2 @security', async ({
+    api,
+  }, info) => {
     meta(info, 'AUTH-003');
     const u = makeUser('subscriber');
     const { refresh } = await auth.registerAndLogin(api, u);

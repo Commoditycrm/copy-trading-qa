@@ -30,7 +30,9 @@ test.describe('AUTH-001 Register', () => {
     expect(body.business_name).toBe(u.business_name);
   });
 
-  test('TC-AUTH-001-003 duplicate email returns 409 and creates no second row @auth @api @P1 @negative', async ({ api }, info) => {
+  test('TC-AUTH-001-003 duplicate email returns 409 and creates no second row @auth @api @P1 @negative', async ({
+    api,
+  }, info) => {
     meta(info, 'AUTH-001');
     const u = makeUser('subscriber');
     expect((await auth.register(api, u)).status()).toBe(201);
@@ -39,7 +41,9 @@ test.describe('AUTH-001 Register', () => {
     expect((await dup.json()).detail).toBe('email_taken');
   });
 
-  test('TC-AUTH-001-004 trader without business_name is rejected 422 @auth @api @P1 @negative', async ({ api }, info) => {
+  test('TC-AUTH-001-004 trader without business_name is rejected 422 @auth @api @P1 @negative', async ({
+    api,
+  }, info) => {
     meta(info, 'AUTH-001');
     const u = makeUser('trader');
     delete u.business_name;
@@ -49,7 +53,11 @@ test.describe('AUTH-001 Register', () => {
   test('TC-AUTH-001-005 self-registration as admin is blocked 422 @auth @api @P1 @security', async ({ api }, info) => {
     meta(info, 'AUTH-001', ['AUTHZ-001']);
     const u = makeUser('subscriber');
-    const res = await auth.registerRaw(api, { email: u.email, password: u.password, role: 'admin', display_name: u.display_name }, u.clientIp);
+    const res = await auth.registerRaw(
+      api,
+      { email: u.email, password: u.password, role: 'admin', display_name: u.display_name },
+      u.clientIp,
+    );
     expect(res.status()).toBe(422);
   });
 
@@ -67,7 +75,11 @@ test.describe('AUTH-001 Register', () => {
     meta(info, 'AUTH-001', ['AUTH-002']);
     const u = makeUser('subscriber');
     const mixed = u.email.toUpperCase();
-    const res = await auth.registerRaw(api, { email: `  ${mixed}  `, password: u.password, role: 'subscriber', display_name: u.display_name }, u.clientIp);
+    const res = await auth.registerRaw(
+      api,
+      { email: `  ${mixed}  `, password: u.password, role: 'subscriber', display_name: u.display_name },
+      u.clientIp,
+    );
     expect(res.status()).toBe(201);
     // login with the normalized (lowercase, trimmed) form works
     expect((await auth.login(api, u.email.toLowerCase(), u.password, u.clientIp)).status()).toBe(200);

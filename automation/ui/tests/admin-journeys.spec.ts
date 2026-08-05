@@ -30,7 +30,11 @@ async function seedAdmin(api: any, config: any, page: any): Promise<{ email: str
 test.describe('WF-22 Admin operations (UI, post-remediation)', () => {
   test.skip(({ config }) => config.envName !== 'local', 'UI E2E runs against the local full stack.');
 
-  test('TC-WF-22-001 admin logs in through the browser and reaches the admin dashboard @ui @P1 @integration', async ({ page, config, api }, info) => {
+  test('TC-WF-22-001 admin logs in through the browser and reaches the admin dashboard @ui @P1 @integration', async ({
+    page,
+    config,
+    api,
+  }, info) => {
     meta(info, 'WF-22', ['ADMIN-002', 'AUTH-002']);
     const u = makeUser('subscriber');
     const acct = await authApi.registerAndLogin(api, u);
@@ -49,7 +53,11 @@ test.describe('WF-22 Admin operations (UI, post-remediation)', () => {
     }
   });
 
-  test('TC-WF-22-004 admin activates/deactivates a user from the Users screen @ui @P1 @integration', async ({ page, config, api }, info) => {
+  test('TC-WF-22-004 admin activates/deactivates a user from the Users screen @ui @P1 @integration', async ({
+    page,
+    config,
+    api,
+  }, info) => {
     meta(info, 'WF-22', ['ADMIN-001']);
     const admin = await seedAdmin(api, config, page);
     const targetU = makeUser('trader');
@@ -76,7 +84,11 @@ test.describe('WF-22 Admin operations (UI, post-remediation)', () => {
     }
   });
 
-  test('TC-WF-22-005 admin sees a rejected mirror order on the Rejected screen @ui @P2 @integration', async ({ page, config, api }, info) => {
+  test('TC-WF-22-005 admin sees a rejected mirror order on the Rejected screen @ui @P2 @integration', async ({
+    page,
+    config,
+    api,
+  }, info) => {
     meta(info, 'WF-22', ['ADMIN-003']);
     const admin = await seedAdmin(api, config, page);
     const mb = new MockBroker(config);
@@ -86,7 +98,9 @@ test.describe('WF-22 Admin operations (UI, post-remediation)', () => {
     try {
       await mb.setPlaceOrderResult(p.subs[0]!.account_id!, 'reject', { reason: 'asset not tradable' });
       await trades.placeOrder(api, p.traderAccess, p.brokerAccountId, marketOrder('AAPL', 5));
-      await expect.poll(() => notifCount(config, p.subs[0]!.user_id, 'copy.rejected'), { timeout: 20000 }).toBeGreaterThanOrEqual(1);
+      await expect
+        .poll(() => notifCount(config, p.subs[0]!.user_id, 'copy.rejected'), { timeout: 20000 })
+        .toBeGreaterThanOrEqual(1);
 
       await ap.openRejected();
       await expect(ap.rejectedHeading).toBeVisible();
@@ -97,7 +111,11 @@ test.describe('WF-22 Admin operations (UI, post-remediation)', () => {
     }
   });
 
-  test('TC-WF-22-009 CONTROL — an unremediated (lowercase-label) admin cannot load /admin (500) @ui @P0 @defect', async ({ page, config, api }, info) => {
+  test('TC-WF-22-009 CONTROL — an unremediated (lowercase-label) admin cannot load /admin (500) @ui @P0 @defect', async ({
+    page,
+    config,
+    api,
+  }, info) => {
     meta(info, 'WF-22', ['ADMIN-001']);
     // DEF-ADMIN-001: without the QA enum remediation the admin's own row is un-deserializable → /api/auth/me 500s.
     const u = makeUser('subscriber');

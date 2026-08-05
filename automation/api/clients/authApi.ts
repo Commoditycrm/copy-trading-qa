@@ -24,8 +24,7 @@ export const login = (api: SafeApi, email: string, password: string, clientIp?: 
 export const refresh = (api: SafeApi, refresh_token: string): Promise<APIResponse> =>
   api.post('/api/auth/refresh', { data: { refresh_token } });
 
-export const me = (api: SafeApi, token: string): Promise<APIResponse> =>
-  api.get('/api/auth/me', { token });
+export const me = (api: SafeApi, token: string): Promise<APIResponse> => api.get('/api/auth/me', { token });
 
 /** PATCH /api/auth/me — self-scoped profile update (phone + SMS consent/category flags). */
 export const updateMe = (api: SafeApi, token: string, body: Record<string, unknown>): Promise<APIResponse> =>
@@ -40,8 +39,12 @@ export const resetPassword = (api: SafeApi, token: string, new_password: string)
 export const verifyEmail = (api: SafeApi, token: string): Promise<APIResponse> =>
   api.post('/api/auth/verify-email', { data: { token } });
 
-export const changeEmail = (api: SafeApi, accessToken: string, new_email: string, password: string): Promise<APIResponse> =>
-  api.post('/api/auth/change-email', { token: accessToken, data: { new_email, password } });
+export const changeEmail = (
+  api: SafeApi,
+  accessToken: string,
+  new_email: string,
+  password: string,
+): Promise<APIResponse> => api.post('/api/auth/change-email', { token: accessToken, data: { new_email, password } });
 
 export const verifyEmailChange = (api: SafeApi, token: string): Promise<APIResponse> =>
   api.post('/api/auth/verify-email-change', { data: { token } });

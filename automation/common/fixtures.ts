@@ -22,5 +22,6 @@ export { expect };
 /** Record traceability metadata on the current test (primary + related Functionality IDs). */
 export function meta(info: TestInfo, primaryFuncId: string, relatedFuncIds: string[] = []): void {
   info.annotations.push({ type: 'primary_func_id', description: primaryFuncId });
-  if (relatedFuncIds.length) info.annotations.push({ type: 'related_func_ids', description: relatedFuncIds.join(', ') });
+  if (relatedFuncIds.length)
+    info.annotations.push({ type: 'related_func_ids', description: relatedFuncIds.join(', ') });
 }

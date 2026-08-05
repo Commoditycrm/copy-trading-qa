@@ -13,7 +13,10 @@ import { subSetting } from '../../../common/tradingSetup.js';
 test.describe('Risk-control settings authorization', () => {
   test.skip(({ config }) => config.envName !== 'local', 'Requires the local stack.');
 
-  test('TC-AUTHZ-001-014 a non-subscriber (trader) cannot access subscriber settings (403) @risk @api @P1 @security', async ({ api, config }, info) => {
+  test('TC-AUTHZ-001-014 a non-subscriber (trader) cannot access subscriber settings (403) @risk @api @P1 @security', async ({
+    api,
+    config,
+  }, info) => {
     meta(info, 'AUTHZ-001');
     const p = await provisionFanout(api, config, []); // trader only
     try {
@@ -25,7 +28,10 @@ test.describe('Risk-control settings authorization', () => {
     }
   });
 
-  test('TC-AUTHZ-001-015 settings are self-scoped — one subscriber cannot affect another @risk @api @P1 @security', async ({ api, config }, info) => {
+  test('TC-AUTHZ-001-015 settings are self-scoped — one subscriber cannot affect another @risk @api @P1 @security', async ({
+    api,
+    config,
+  }, info) => {
     meta(info, 'AUTHZ-001');
     const p = await provisionFanout(api, config, [{}, {}]);
     try {
@@ -41,7 +47,10 @@ test.describe('Risk-control settings authorization', () => {
     }
   });
 
-  test('TC-AUTHZ-001-016 follow without an approved request is refused (403 follow_not_approved) @risk @api @P1 @security', async ({ api, config }, info) => {
+  test('TC-AUTHZ-001-016 follow without an approved request is refused (403 follow_not_approved) @risk @api @P1 @security', async ({
+    api,
+    config,
+  }, info) => {
     meta(info, 'AUTHZ-001', ['FOLLOW-001']);
     const p = await provisionFanout(api, config, []); // provides a trader
     const outsider = makeUser('subscriber');

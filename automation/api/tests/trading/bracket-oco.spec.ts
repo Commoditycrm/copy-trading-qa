@@ -8,14 +8,24 @@ import * as trades from '../../clients/tradesApi.js';
 import { limitBracket } from '../../clients/tradesApi.js';
 import { provisionFanout } from './helpers.js';
 import { MockBroker } from '../../../common/mockBrokerClient.js';
-import { orderRow, childOrders, childId, bracketLegCount, traderEntryCount, auditCount } from '../../../common/tradingSetup.js';
+import {
+  orderRow,
+  childOrders,
+  childId,
+  bracketLegCount,
+  traderEntryCount,
+  auditCount,
+} from '../../../common/tradingSetup.js';
 
 const SYM = 'AAPL';
 
 test.describe('Bracket / OCO (mock broker)', () => {
   test.skip(({ config }) => config.envName !== 'local', 'Requires the local stack + mock broker.');
 
-  test('TC-COPY-004-002 OCO — one exit-leg fill cancels the sibling; no duplicate exit, no reverse @trading @api @P0 @data-integrity', async ({ api, config }, info) => {
+  test('TC-COPY-004-002 OCO — one exit-leg fill cancels the sibling; no duplicate exit, no reverse @trading @api @P0 @data-integrity', async ({
+    api,
+    config,
+  }, info) => {
     meta(info, 'COPY-004', ['TRADE-004']);
     const mb = new MockBroker(config);
     await mb.resetScenario();
@@ -45,18 +55,25 @@ test.describe('Bracket / OCO (mock broker)', () => {
       mb.emitDuplicateFill(tp.id);
       expect(bracketLegCount(config, entryId), 'still exactly two legs').toBe(2);
       expect(orderRow(config, sl.id).status).toBe('canceled');
-      expect(await mb.getExitCallCount(p.brokerAccountId), 'no additional exit reached the broker').toBe(exitPlacesAfterEmulate);
+      expect(await mb.getExitCallCount(p.brokerAccountId), 'no additional exit reached the broker').toBe(
+        exitPlacesAfterEmulate,
+      );
 
       // 4) no reverse/extra order: entry + TP + SL only; trader entry count stays 1
       expect(traderEntryCount(config, p.traderId, SYM)).toBe(1);
       // 5) trader is notified of the bracket fill
-      expect(auditCount(config, 'bracket.leg_filled') + auditCount(config, 'bracket.sibling_cancelled')).toBeGreaterThanOrEqual(0);
+      expect(
+        auditCount(config, 'bracket.leg_filled') + auditCount(config, 'bracket.sibling_cancelled'),
+      ).toBeGreaterThanOrEqual(0);
     } finally {
       p.cleanup();
     }
   });
 
-  test('TC-COPY-001-008 emulated bracket exit legs are NOT fanned out to subscribers @trading @api @P0 @data-integrity', async ({ api, config }, info) => {
+  test('TC-COPY-001-008 emulated bracket exit legs are NOT fanned out to subscribers @trading @api @P0 @data-integrity', async ({
+    api,
+    config,
+  }, info) => {
     meta(info, 'COPY-001', ['COPY-004']);
     const mb = new MockBroker(config);
     await mb.resetScenario();
@@ -80,7 +97,14 @@ test.describe('Bracket / OCO (mock broker)', () => {
 
       // driving fanout directly on a leg hits the guard → zero fanned; echoing it changes nothing
       expect(mb.fanoutOrder(tp.id).fanned, 'bracket-parent guard returns no fanout').toBe(0);
-      mb.emitBrokerEvent({ trader_id: p.traderId, account_id: p.brokerAccountId, client_order_id: tp.id, event: 'new', status: 'new', symbol: SYM });
+      mb.emitBrokerEvent({
+        trader_id: p.traderId,
+        account_id: p.brokerAccountId,
+        client_order_id: tp.id,
+        event: 'new',
+        status: 'new',
+        symbol: SYM,
+      });
       expect(childId(config, tp.id, sub.user_id), 'listener echo does not bypass the guard').toBe('');
 
       // invariant: exactly one fanned-out entry, subscriber mirror count unchanged (still just the entry)

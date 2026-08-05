@@ -15,7 +15,10 @@ const SYM = 'NVDA';
 test.describe('Concurrent close (mock broker)', () => {
   test.skip(({ config }) => config.envName !== 'local', 'Requires the local stack + mock broker.');
 
-  test('TC-COPY-002-013 two concurrent closes never exceed held qty and open no short @trading @api @P0 @concurrency', async ({ api, config }, info) => {
+  test('TC-COPY-002-013 two concurrent closes never exceed held qty and open no short @trading @api @P0 @concurrency', async ({
+    api,
+    config,
+  }, info) => {
     meta(info, 'COPY-002');
     const mb = new MockBroker(config);
     await mb.resetScenario();
@@ -34,7 +37,10 @@ test.describe('Concurrent close (mock broker)', () => {
       expect(Number(orderRow(config, subEntry).filled_quantity)).toBe(10);
 
       // fire TWO identical closes concurrently
-      await mb.runConcurrentClose(() => trades.closeOrder(api, p.traderAccess, entryId, 10) as unknown as Promise<unknown>, 2);
+      await mb.runConcurrentClose(
+        () => trades.closeOrder(api, p.traderAccess, entryId, 10) as unknown as Promise<unknown>,
+        2,
+      );
 
       // trader reverse: exactly ONE SELL (advisory lock + 3s dedup collapsed the pair)
       await expect.poll(() => sideOrderCount(config, p.traderId, SYM, 'sell'), { timeout: 20000 }).toBe(1);

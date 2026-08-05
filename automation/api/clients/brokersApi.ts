@@ -20,8 +20,12 @@ export const disconnect = (api: SafeApi, token: string, accountId: string): Prom
 export const refreshBalance = (api: SafeApi, token: string, accountId: string): Promise<APIResponse> =>
   api.post(`${P}/${accountId}/refresh-balance`, { token });
 
-export const updateSettings = (api: SafeApi, token: string, accountId: string, body: Record<string, unknown>): Promise<APIResponse> =>
-  api.patch(`${P}/${accountId}/settings`, { token, data: body });
+export const updateSettings = (
+  api: SafeApi,
+  token: string,
+  accountId: string,
+  body: Record<string, unknown>,
+): Promise<APIResponse> => api.patch(`${P}/${accountId}/settings`, { token, data: body });
 
 // ── SnapTrade (offline-reachable branches only) ──
 export const snaptradeStart = (api: SafeApi, token: string, label = 'QA SnapTrade'): Promise<APIResponse> =>

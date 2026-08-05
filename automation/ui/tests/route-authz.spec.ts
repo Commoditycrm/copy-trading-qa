@@ -13,14 +13,20 @@ import * as authApi from '../../api/clients/authApi.js';
 test.describe('WF route authorization (UI)', () => {
   test.skip(({ config }) => config.envName !== 'local', 'UI E2E runs against the local full stack.');
 
-  test('TC-WF-02-002 unauthenticated access to a protected route redirects to /login @ui @P1 @security', async ({ page }, info) => {
+  test('TC-WF-02-002 unauthenticated access to a protected route redirects to /login @ui @P1 @security', async ({
+    page,
+  }, info) => {
     meta(info, 'WF-02', ['AUTHZ-001']);
     await page.goto('/positions', { waitUntil: 'domcontentloaded' });
     await page.waitForURL(/\/login/);
     await expect(new LoginPage(page).submit).toBeVisible();
   });
 
-  test('TC-WF-22-002 a subscriber is redirected away from /admin @ui @P1 @security', async ({ page, config, api }, info) => {
+  test('TC-WF-22-002 a subscriber is redirected away from /admin @ui @P1 @security', async ({
+    page,
+    config,
+    api,
+  }, info) => {
     meta(info, 'WF-22', ['AUTHZ-001', 'ADMIN-001']);
     const u = makeUser('subscriber');
     const acct = await authApi.registerAndLogin(api, u);
@@ -35,7 +41,11 @@ test.describe('WF route authorization (UI)', () => {
     }
   });
 
-  test('TC-WF-22-003 an admin is redirected from the app shell to /admin @ui @P1 @security', async ({ page, config, api }, info) => {
+  test('TC-WF-22-003 an admin is redirected from the app shell to /admin @ui @P1 @security', async ({
+    page,
+    config,
+    api,
+  }, info) => {
     meta(info, 'WF-22', ['AUTHZ-001', 'ADMIN-001']);
     const u = makeUser('subscriber');
     const acct = await authApi.registerAndLogin(api, u);

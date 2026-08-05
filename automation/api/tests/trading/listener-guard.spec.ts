@@ -16,7 +16,10 @@ const SYM = 'AAPL';
 test.describe('Listener double-fanout guard (mock broker)', () => {
   test.skip(({ config }) => config.envName !== 'local', 'Requires the local stack + mock broker.');
 
-  test('TC-TRADE-001-010 listener echo of an app-originated order does not double-fanout @trading @api @P0 @data-integrity', async ({ api, config }, info) => {
+  test('TC-TRADE-001-010 listener echo of an app-originated order does not double-fanout @trading @api @P0 @data-integrity', async ({
+    api,
+    config,
+  }, info) => {
     meta(info, 'TRADE-001', ['COPY-001']);
     const mb = new MockBroker(config);
     await mb.resetScenario();

@@ -9,7 +9,14 @@ import * as trades from '../../clients/tradesApi.js';
 import { marketOrder } from '../../clients/tradesApi.js';
 import { provisionFanout } from './helpers.js';
 import { MockBroker } from '../../../common/mockBrokerClient.js';
-import { orderRow, childForUser, childId, latestParentOrderId, auditCount, parentOrderCount } from '../../../common/tradingSetup.js';
+import {
+  orderRow,
+  childForUser,
+  childId,
+  latestParentOrderId,
+  auditCount,
+  parentOrderCount,
+} from '../../../common/tradingSetup.js';
 
 const SYM = 'AAPL';
 const childStatus = (cfg: any, parent: string, user: string) => childForUser(cfg, parent, user)?.status ?? 'none';
@@ -17,7 +24,10 @@ const childStatus = (cfg: any, parent: string, user: string) => childForUser(cfg
 test.describe('Broker lifecycle (mock broker)', () => {
   test.skip(({ config }) => config.envName !== 'local', 'Requires the local stack + mock broker.');
 
-  test('TC-TRADE-001-008 broker rejection persists REJECTED + reason + audit; exactly one broker call @trading @api @P0 @data-integrity', async ({ api, config }, info) => {
+  test('TC-TRADE-001-008 broker rejection persists REJECTED + reason + audit; exactly one broker call @trading @api @P0 @data-integrity', async ({
+    api,
+    config,
+  }, info) => {
     meta(info, 'TRADE-001');
     const mb = new MockBroker(config);
     await mb.resetScenario();
@@ -39,7 +49,10 @@ test.describe('Broker lifecycle (mock broker)', () => {
     }
   });
 
-  test('TC-TRADE-002-001 cancel broker-error is 502 and does NOT mutate local status (cancel-failure invariant) @trading @api @P0 @data-integrity', async ({ api, config }, info) => {
+  test('TC-TRADE-002-001 cancel broker-error is 502 and does NOT mutate local status (cancel-failure invariant) @trading @api @P0 @data-integrity', async ({
+    api,
+    config,
+  }, info) => {
     meta(info, 'TRADE-002');
     const mb = new MockBroker(config);
     await mb.resetScenario();
@@ -59,7 +72,10 @@ test.describe('Broker lifecycle (mock broker)', () => {
     }
   });
 
-  test('TC-TRADE-001-009 fill-sync advances partial→full from the broker (status + filled_quantity) @trading @api @P0 @integration', async ({ api, config }, info) => {
+  test('TC-TRADE-001-009 fill-sync advances partial→full from the broker (status + filled_quantity) @trading @api @P0 @integration', async ({
+    api,
+    config,
+  }, info) => {
     meta(info, 'TRADE-001');
     const mb = new MockBroker(config);
     await mb.resetScenario();
@@ -83,7 +99,10 @@ test.describe('Broker lifecycle (mock broker)', () => {
     }
   });
 
-  test('TC-COPY-002-018 mirror broker rejection persists the child as REJECTED @trading @api @P0 @data-integrity', async ({ api, config }, info) => {
+  test('TC-COPY-002-018 mirror broker rejection persists the child as REJECTED @trading @api @P0 @data-integrity', async ({
+    api,
+    config,
+  }, info) => {
     meta(info, 'COPY-002', ['COPY-001']);
     const mb = new MockBroker(config);
     await mb.resetScenario();
@@ -101,7 +120,10 @@ test.describe('Broker lifecycle (mock broker)', () => {
     }
   });
 
-  test('TC-COPY-003-001 transient broker error routes the mirror to RETRY_PENDING with a future retry_at @trading @api @P0 @recovery', async ({ api, config }, info) => {
+  test('TC-COPY-003-001 transient broker error routes the mirror to RETRY_PENDING with a future retry_at @trading @api @P0 @recovery', async ({
+    api,
+    config,
+  }, info) => {
     meta(info, 'COPY-003');
     const mb = new MockBroker(config);
     await mb.resetScenario();
@@ -118,14 +140,19 @@ test.describe('Broker lifecycle (mock broker)', () => {
     }
   });
 
-  test('TC-COPY-003-004 user-fixable error is a clean REJECTED with no retry @trading @api @P0 @recovery', async ({ api, config }, info) => {
+  test('TC-COPY-003-004 user-fixable error is a clean REJECTED with no retry @trading @api @P0 @recovery', async ({
+    api,
+    config,
+  }, info) => {
     meta(info, 'COPY-003');
     const mb = new MockBroker(config);
     await mb.resetScenario();
     const p = await provisionFanout(api, config, [{ retry_open: '1m' }]);
     try {
       const sub = p.subs[0]!;
-      await mb.setPlaceOrderResult(sub.account_id!, 'permanent', { reason: 'insufficient buying power for this order' });
+      await mb.setPlaceOrderResult(sub.account_id!, 'permanent', {
+        reason: 'insufficient buying power for this order',
+      });
       const placed = await trades.placeOrder(api, p.traderAccess, p.brokerAccountId, marketOrder(SYM, 5));
       const parent = (await placed.json()).id as string;
       await expect.poll(() => childStatus(config, parent, sub.user_id), { timeout: 20000 }).toBe('rejected');
@@ -137,7 +164,10 @@ test.describe('Broker lifecycle (mock broker)', () => {
     }
   });
 
-  test('TC-COPY-003-002 retry scheduler re-places a RETRY_PENDING mirror and it succeeds @trading @api @P0 @recovery', async ({ api, config }, info) => {
+  test('TC-COPY-003-002 retry scheduler re-places a RETRY_PENDING mirror and it succeeds @trading @api @P0 @recovery', async ({
+    api,
+    config,
+  }, info) => {
     meta(info, 'COPY-003');
     const mb = new MockBroker(config);
     await mb.resetScenario();

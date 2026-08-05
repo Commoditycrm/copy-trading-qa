@@ -10,12 +10,22 @@ import { marketOrder } from '../../clients/tradesApi.js';
 import * as s from '../../clients/settingsApi.js';
 import { provisionFanout } from '../trading/helpers.js';
 import { MockBroker } from '../../../common/mockBrokerClient.js';
-import { subSetting, setSubSettingRaw, childId, childOrders, auditByActor, notifCount } from '../../../common/tradingSetup.js';
+import {
+  subSetting,
+  setSubSettingRaw,
+  childId,
+  childOrders,
+  auditByActor,
+  notifCount,
+} from '../../../common/tradingSetup.js';
 
 test.describe('Risk-control behavior', () => {
   test.skip(({ config }) => config.envName !== 'local', 'Requires the local stack + mock broker.');
 
-  test('TC-RISK-001-007 daily-loss breach auto-pauses copy at fanout (no mirror, marker, audit) @risk @api @P0 @recovery', async ({ api, config }, info) => {
+  test('TC-RISK-001-007 daily-loss breach auto-pauses copy at fanout (no mirror, marker, audit) @risk @api @P0 @recovery', async ({
+    api,
+    config,
+  }, info) => {
     meta(info, 'RISK-001');
     const mb = new MockBroker(config);
     await mb.resetScenario();
@@ -26,7 +36,9 @@ test.describe('Risk-control behavior', () => {
       mb.seedPnl(sub.user_id, sub.account_id!, { symbol: 'PNLX', quantity: 10, buy_price: 100, sell_price: 90 }); // -100
       const placed = await trades.placeOrder(api, p.traderAccess, p.brokerAccountId, marketOrder('AAPL', 1));
       const parent = (await placed.json()).id as string;
-      await expect.poll(() => auditByActor(config, 'copy.auto_paused_daily_loss_limit', sub.user_id), { timeout: 20000 }).toBeGreaterThanOrEqual(1);
+      await expect
+        .poll(() => auditByActor(config, 'copy.auto_paused_daily_loss_limit', sub.user_id), { timeout: 20000 })
+        .toBeGreaterThanOrEqual(1);
       expect(childId(config, parent, sub.user_id), 'no mirror once auto-paused').toBe('');
       expect(subSetting(config, sub.user_id, 'copy_enabled')).toBe('false');
       expect(subSetting(config, sub.user_id, 'pnl_auto_paused_at')).not.toBe('');
@@ -35,7 +47,10 @@ test.describe('Risk-control behavior', () => {
     }
   });
 
-  test('TC-RISK-001-008 daily-profit breach auto-pauses copy at fanout @risk @api @P0 @recovery', async ({ api, config }, info) => {
+  test('TC-RISK-001-008 daily-profit breach auto-pauses copy at fanout @risk @api @P0 @recovery', async ({
+    api,
+    config,
+  }, info) => {
     meta(info, 'RISK-001');
     const mb = new MockBroker(config);
     await mb.resetScenario();
@@ -45,29 +60,39 @@ test.describe('Risk-control behavior', () => {
       expect((await s.dailyProfit(api, p.subAccess[0]!, 50)).status()).toBe(200);
       mb.seedPnl(sub.user_id, sub.account_id!, { symbol: 'PNLX', quantity: 10, buy_price: 100, sell_price: 120 }); // +200
       const placed = await trades.placeOrder(api, p.traderAccess, p.brokerAccountId, marketOrder('AAPL', 1));
-      await (await placed.json());
-      await expect.poll(() => auditByActor(config, 'copy.auto_paused_daily_profit_limit', sub.user_id), { timeout: 20000 }).toBeGreaterThanOrEqual(1);
+      await await placed.json();
+      await expect
+        .poll(() => auditByActor(config, 'copy.auto_paused_daily_profit_limit', sub.user_id), { timeout: 20000 })
+        .toBeGreaterThanOrEqual(1);
       expect(subSetting(config, sub.user_id, 'copy_enabled')).toBe('false');
     } finally {
       p.cleanup();
     }
   });
 
-  test('TC-RISK-004-001 excluded symbol is not mirrored (skipped_excluded_symbol) @risk @api @P1 @data-integrity', async ({ api, config }, info) => {
+  test('TC-RISK-004-001 excluded symbol is not mirrored (skipped_excluded_symbol) @risk @api @P1 @data-integrity', async ({
+    api,
+    config,
+  }, info) => {
     meta(info, 'RISK-004');
     const p = await provisionFanout(api, config, [{ symbol_exclusion: ['MSFT'] }]);
     try {
       const sub = p.subs[0]!;
       const placed = await trades.placeOrder(api, p.traderAccess, p.brokerAccountId, marketOrder('MSFT', 5));
       const parent = (await placed.json()).id as string;
-      await expect.poll(() => auditByActor(config, 'copy.skipped_excluded_symbol', sub.user_id), { timeout: 20000 }).toBeGreaterThanOrEqual(1);
+      await expect
+        .poll(() => auditByActor(config, 'copy.skipped_excluded_symbol', sub.user_id), { timeout: 20000 })
+        .toBeGreaterThanOrEqual(1);
       expect(childId(config, parent, sub.user_id)).toBe('');
     } finally {
       p.cleanup();
     }
   });
 
-  test('TC-RISK-004-002 inclusion list mirrors only listed symbols @risk @api @P1 @data-integrity', async ({ api, config }, info) => {
+  test('TC-RISK-004-002 inclusion list mirrors only listed symbols @risk @api @P1 @data-integrity', async ({
+    api,
+    config,
+  }, info) => {
     meta(info, 'RISK-004');
     const p = await provisionFanout(api, config, [{ symbol_inclusion: ['AAPL'] }]);
     try {
@@ -75,7 +100,9 @@ test.describe('Risk-control behavior', () => {
       // not in inclusion list → skipped
       const a = await trades.placeOrder(api, p.traderAccess, p.brokerAccountId, marketOrder('MSFT', 5));
       const pMsft = (await a.json()).id as string;
-      await expect.poll(() => auditByActor(config, 'copy.skipped_not_in_inclusion_list', sub.user_id), { timeout: 20000 }).toBeGreaterThanOrEqual(1);
+      await expect
+        .poll(() => auditByActor(config, 'copy.skipped_not_in_inclusion_list', sub.user_id), { timeout: 20000 })
+        .toBeGreaterThanOrEqual(1);
       expect(childId(config, pMsft, sub.user_id)).toBe('');
       // in inclusion list → mirrored
       const b = await trades.placeOrder(api, p.traderAccess, p.brokerAccountId, marketOrder('AAPL', 5));
@@ -86,21 +113,29 @@ test.describe('Risk-control behavior', () => {
     }
   });
 
-  test('TC-RISK-004-003 symbol in both lists is excluded (exclusion wins) @risk @api @P1 @data-integrity', async ({ api, config }, info) => {
+  test('TC-RISK-004-003 symbol in both lists is excluded (exclusion wins) @risk @api @P1 @data-integrity', async ({
+    api,
+    config,
+  }, info) => {
     meta(info, 'RISK-004');
     const p = await provisionFanout(api, config, [{ symbol_exclusion: ['AAPL'], symbol_inclusion: ['AAPL'] }]);
     try {
       const sub = p.subs[0]!;
       const placed = await trades.placeOrder(api, p.traderAccess, p.brokerAccountId, marketOrder('AAPL', 5));
       const parent = (await placed.json()).id as string;
-      await expect.poll(() => auditByActor(config, 'copy.skipped_excluded_symbol', sub.user_id), { timeout: 20000 }).toBeGreaterThanOrEqual(1);
+      await expect
+        .poll(() => auditByActor(config, 'copy.skipped_excluded_symbol', sub.user_id), { timeout: 20000 })
+        .toBeGreaterThanOrEqual(1);
       expect(childId(config, parent, sub.user_id), 'conflict resolves to excluded').toBe('');
     } finally {
       p.cleanup();
     }
   });
 
-  test('TC-RISK-002-004 clearing the auto-liquidation floor does NOT clear a prior liquidation marker @risk @api @P1 @data-integrity', async ({ api, config }, info) => {
+  test('TC-RISK-002-004 clearing the auto-liquidation floor does NOT clear a prior liquidation marker @risk @api @P1 @data-integrity', async ({
+    api,
+    config,
+  }, info) => {
     meta(info, 'RISK-002');
     const p = await provisionFanout(api, config, [{}]);
     try {
@@ -115,7 +150,10 @@ test.describe('Risk-control behavior', () => {
     }
   });
 
-  test('TC-RISK-002-003 auto-liquidated subscriber is sticky — a fanout does not re-enable copy @risk @api @P1 @recovery', async ({ api, config }, info) => {
+  test('TC-RISK-002-003 auto-liquidated subscriber is sticky — a fanout does not re-enable copy @risk @api @P1 @recovery', async ({
+    api,
+    config,
+  }, info) => {
     meta(info, 'RISK-002', ['RISK-001']);
     const p = await provisionFanout(api, config, [{}]);
     try {
@@ -136,7 +174,10 @@ test.describe('Risk-control behavior', () => {
     }
   });
 
-  test('TC-RISK-003-005 position TP enforcement closes the position when unrealized pct crosses TP @risk @api @P0 @integration', async ({ api, config }, info) => {
+  test('TC-RISK-003-005 position TP enforcement closes the position when unrealized pct crosses TP @risk @api @P0 @integration', async ({
+    api,
+    config,
+  }, info) => {
     meta(info, 'RISK-003');
     const mb = new MockBroker(config);
     await mb.resetScenario();
@@ -153,7 +194,10 @@ test.describe('Risk-control behavior', () => {
     }
   });
 
-  test('TC-RISK-003-004 copy-trader-bracket ON suppresses the position enforcer (no double-close) @risk @api @P0 @data-integrity', async ({ api, config }, info) => {
+  test('TC-RISK-003-004 copy-trader-bracket ON suppresses the position enforcer (no double-close) @risk @api @P0 @data-integrity', async ({
+    api,
+    config,
+  }, info) => {
     meta(info, 'RISK-003');
     const mb = new MockBroker(config);
     await mb.resetScenario();
@@ -171,7 +215,10 @@ test.describe('Risk-control behavior', () => {
     }
   });
 
-  test('TC-RISK-001-009 next-day auto-resume re-enables a prior-UTC-day pause (poller path) @risk @api @P0 @recovery', async ({ api, config }, info) => {
+  test('TC-RISK-001-009 next-day auto-resume re-enables a prior-UTC-day pause (poller path) @risk @api @P0 @recovery', async ({
+    api,
+    config,
+  }, info) => {
     meta(info, 'RISK-001');
     const mb = new MockBroker(config);
     await mb.resetScenario();
@@ -190,7 +237,10 @@ test.describe('Risk-control behavior', () => {
     }
   });
 
-  test('TC-RISK-002-002 auto-liquidation triggers on unrealized-profit ≥ limit (take-profit) + notifies @risk @api @P0 @recovery', async ({ api, config }, info) => {
+  test('TC-RISK-002-002 auto-liquidation triggers on unrealized-profit ≥ limit (take-profit) + notifies @risk @api @P0 @recovery', async ({
+    api,
+    config,
+  }, info) => {
     meta(info, 'RISK-002', ['NOTIF-001']);
     // NOTE: model/schema/manual describe an equity FLOOR, but the poller triggers on unrealized-PROFIT
     // ≥ limit (audit copy.auto_liquidated_take_profit). Asserting the ACTUAL behavior; doc/impl mismatch
@@ -207,7 +257,10 @@ test.describe('Risk-control behavior', () => {
       expect(r.copy_enabled, 'copy disabled on liquidation').toBe(false);
       expect(r.auto_liquidated, 'liquidation marker stamped').toBe(true);
       expect(auditByActor(config, 'copy.auto_liquidated_take_profit', sub.user_id)).toBeGreaterThanOrEqual(1);
-      expect(notifCount(config, sub.user_id, 'copy.auto_liquidated'), 'in-app notification created').toBeGreaterThanOrEqual(1);
+      expect(
+        notifCount(config, sub.user_id, 'copy.auto_liquidated'),
+        'in-app notification created',
+      ).toBeGreaterThanOrEqual(1);
     } finally {
       p.cleanup();
     }

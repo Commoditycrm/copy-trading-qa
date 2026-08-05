@@ -21,15 +21,15 @@ type Sess = { email: string; tokens: { access: string; refresh: string } };
  * confirmed defects stay documented. Remove a rule here once the app fixes it — then the test guards the fix.
  */
 const KNOWN: Record<string, string[]> = {
-  '/register': ['label'],                                      // DEF-A11Y-001
-  '/settings': ['label', 'select-name', 'color-contrast'],    // DEF-A11Y-001 + 002
-  '/trade-panel': ['label', 'color-contrast'],                // DEF-A11Y-001 + 002
-  '/admin': ['label', 'color-contrast'],                      // DEF-A11Y-001 + 002
-  '/brokers': ['color-contrast'],                             // DEF-A11Y-002
-  '/terms': ['color-contrast', 'link-in-text-block'],         // DEF-A11Y-002 + 003
-  '/privacy': ['color-contrast', 'link-in-text-block'],       // DEF-A11Y-002 + 003
-  '/calendar': ['aria-prohibited-attr'],                      // DEF-A11Y-003
-  '/performance': ['scrollable-region-focusable'],            // DEF-A11Y-003
+  '/register': ['label'], // DEF-A11Y-001
+  '/settings': ['label', 'select-name', 'color-contrast'], // DEF-A11Y-001 + 002
+  '/trade-panel': ['label', 'color-contrast'], // DEF-A11Y-001 + 002
+  '/admin': ['label', 'color-contrast'], // DEF-A11Y-001 + 002
+  '/brokers': ['color-contrast'], // DEF-A11Y-002
+  '/terms': ['color-contrast', 'link-in-text-block'], // DEF-A11Y-002 + 003
+  '/privacy': ['color-contrast', 'link-in-text-block'], // DEF-A11Y-002 + 003
+  '/calendar': ['aria-prohibited-attr'], // DEF-A11Y-003
+  '/performance': ['scrollable-region-focusable'], // DEF-A11Y-003
 };
 
 /** Register a synthetic user via the API (worker-scope safe — no test fixtures) and return a UI session. */
@@ -54,7 +54,15 @@ async function makeSession(role: 'trader' | 'subscriber', admin = false): Promis
 test.describe('A11Y public pages', () => {
   test.skip(({ config }) => config.envName !== 'local', 'a11y suite runs against the local full stack.');
 
-  for (const path of ['/login', '/register', '/forgot-password', '/reset-password?token=dummy', '/terms', '/privacy', '/contact']) {
+  for (const path of [
+    '/login',
+    '/register',
+    '/forgot-password',
+    '/reset-password?token=dummy',
+    '/terms',
+    '/privacy',
+    '/contact',
+  ]) {
     test(`A11Y-SCAN public ${path} has no critical/serious axe violations @a11y @P1`, async ({ page }, info) => {
       meta(info, 'AUTH-001');
       await page.goto(path, { waitUntil: 'domcontentloaded' });
@@ -62,7 +70,10 @@ test.describe('A11Y public pages', () => {
       const v = await scan(page);
       await attachA11y(info, `public${path.replace(/\W+/g, '_')}`, v);
       const unexpected = blocking(v).filter((x) => !(KNOWN[path] ?? []).includes(x.id));
-      expect(unexpected.map((x) => `${x.id}(${x.impact})`), `unexpected critical/serious on ${path}`).toEqual([]);
+      expect(
+        unexpected.map((x) => `${x.id}(${x.impact})`),
+        `unexpected critical/serious on ${path}`,
+      ).toEqual([]);
     });
   }
 });
@@ -72,8 +83,14 @@ test.describe.serial('A11Y subscriber pages', () => {
   let email = '';
   let tokens: { access: string; refresh: string };
 
-  test.beforeAll(async () => { const s = await makeSession('subscriber'); email = s.email; tokens = s.tokens; });
-  test.afterAll(() => { if (email) deleteUser(loadConfig(), email); });
+  test.beforeAll(async () => {
+    const s = await makeSession('subscriber');
+    email = s.email;
+    tokens = s.tokens;
+  });
+  test.afterAll(() => {
+    if (email) deleteUser(loadConfig(), email);
+  });
 
   for (const path of ['/dashboard', '/settings', '/notifications', '/positions', '/trades', '/calendar', '/brokers']) {
     test(`A11Y-SCAN subscriber ${path} @a11y @P1`, async ({ page }, info) => {
@@ -84,7 +101,10 @@ test.describe.serial('A11Y subscriber pages', () => {
       const v = await scan(page);
       await attachA11y(info, `sub${path.replace(/\W+/g, '_')}`, v);
       const unexpected = blocking(v).filter((x) => !(KNOWN[path] ?? []).includes(x.id));
-      expect(unexpected.map((x) => `${x.id}(${x.impact})`), `unexpected critical/serious on ${path}`).toEqual([]);
+      expect(
+        unexpected.map((x) => `${x.id}(${x.impact})`),
+        `unexpected critical/serious on ${path}`,
+      ).toEqual([]);
     });
   }
 });
@@ -94,8 +114,14 @@ test.describe.serial('A11Y trader pages', () => {
   let email = '';
   let tokens: { access: string; refresh: string };
 
-  test.beforeAll(async () => { const s = await makeSession('trader'); email = s.email; tokens = s.tokens; });
-  test.afterAll(() => { if (email) deleteUser(loadConfig(), email); });
+  test.beforeAll(async () => {
+    const s = await makeSession('trader');
+    email = s.email;
+    tokens = s.tokens;
+  });
+  test.afterAll(() => {
+    if (email) deleteUser(loadConfig(), email);
+  });
 
   for (const path of ['/dashboard', '/trade-panel', '/subscribers', '/performance']) {
     test(`A11Y-SCAN trader ${path} @a11y @P1`, async ({ page }, info) => {
@@ -106,7 +132,10 @@ test.describe.serial('A11Y trader pages', () => {
       const v = await scan(page);
       await attachA11y(info, `trader${path.replace(/\W+/g, '_')}`, v);
       const unexpected = blocking(v).filter((x) => !(KNOWN[path] ?? []).includes(x.id));
-      expect(unexpected.map((x) => `${x.id}(${x.impact})`), `unexpected critical/serious on ${path}`).toEqual([]);
+      expect(
+        unexpected.map((x) => `${x.id}(${x.impact})`),
+        `unexpected critical/serious on ${path}`,
+      ).toEqual([]);
     });
   }
 });
@@ -116,8 +145,14 @@ test.describe.serial('A11Y admin pages (post enum-remediation)', () => {
   let email = '';
   let tokens: { access: string; refresh: string };
 
-  test.beforeAll(async () => { const s = await makeSession('subscriber', true); email = s.email; tokens = s.tokens; });
-  test.afterAll(() => { if (email) deleteUser(loadConfig(), email); });
+  test.beforeAll(async () => {
+    const s = await makeSession('subscriber', true);
+    email = s.email;
+    tokens = s.tokens;
+  });
+  test.afterAll(() => {
+    if (email) deleteUser(loadConfig(), email);
+  });
 
   for (const path of ['/admin', '/admin/users', '/admin/rejected']) {
     test(`A11Y-SCAN admin ${path} @a11y @P1`, async ({ page }, info) => {
@@ -128,7 +163,10 @@ test.describe.serial('A11Y admin pages (post enum-remediation)', () => {
       const v = await scan(page);
       await attachA11y(info, `admin${path.replace(/\W+/g, '_')}`, v);
       const unexpected = blocking(v).filter((x) => !(KNOWN[path] ?? []).includes(x.id));
-      expect(unexpected.map((x) => `${x.id}(${x.impact})`), `unexpected critical/serious on ${path}`).toEqual([]);
+      expect(
+        unexpected.map((x) => `${x.id}(${x.impact})`),
+        `unexpected critical/serious on ${path}`,
+      ).toEqual([]);
     });
   }
 });

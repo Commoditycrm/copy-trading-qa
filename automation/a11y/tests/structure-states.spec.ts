@@ -10,7 +10,10 @@ import { makeSession } from '../setup.js';
 test.describe('A11Y structure & states', () => {
   test.skip(({ config }) => config.envName !== 'local', 'a11y suite runs against the local full stack.');
 
-  test('A11Y-LANDMARK the app shell exposes main + navigation landmarks and a single h1 @a11y @P1 @structure', async ({ page, config }, info) => {
+  test('A11Y-LANDMARK the app shell exposes main + navigation landmarks and a single h1 @a11y @P1 @structure', async ({
+    page,
+    config,
+  }, info) => {
     meta(info, 'AUTH-001');
     const s = await makeSession('subscriber');
     try {
@@ -25,7 +28,10 @@ test.describe('A11Y structure & states', () => {
     }
   });
 
-  test('A11Y-TABLE admin Users renders a semantic table with column headers @a11y @P2 @structure', async ({ page, config }, info) => {
+  test('A11Y-TABLE admin Users renders a semantic table with column headers @a11y @P2 @structure', async ({
+    page,
+    config,
+  }, info) => {
     meta(info, 'ADMIN-001');
     const s = await makeSession('subscriber', true);
     try {
@@ -40,7 +46,10 @@ test.describe('A11Y structure & states', () => {
     }
   });
 
-  test('A11Y-STATE the notifications empty-state is exposed as text (not colour/icon only) @a11y @P2 @state', async ({ page, config }, info) => {
+  test('A11Y-STATE the notifications empty-state is exposed as text (not colour/icon only) @a11y @P2 @state', async ({
+    page,
+    config,
+  }, info) => {
     meta(info, 'NOTIF-001');
     const s = await makeSession('subscriber');
     try {

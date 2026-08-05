@@ -14,7 +14,10 @@ const EXPIRY = '2026-12-18';
 test.describe('Options chain (offline surfaces)', () => {
   test.skip(({ config }) => config.envName !== 'local', 'Requires the local stack.');
 
-  test('TC-OPT-001-005 expiries/strikes are Alpaca-only (501 for a fake account) and validate params @options @api @P1 @negative', async ({ api, config }, info) => {
+  test('TC-OPT-001-005 expiries/strikes are Alpaca-only (501 for a fake account) and validate params @options @api @P1 @negative', async ({
+    api,
+    config,
+  }, info) => {
     meta(info, 'OPT-001');
     const p = await provisionFanout(api, config, []);
     try {
@@ -22,13 +25,18 @@ test.describe('Options chain (offline surfaces)', () => {
       expect((await opt.optStrikes(api, p.traderAccess, p.brokerAccountId, 'AAPL', EXPIRY)).status()).toBe(501);
       // validation (before the Alpaca gate would not matter — schema/query validation is 422)
       expect((await opt.optQuote(api, p.traderAccess, p.brokerAccountId, 'AAPL', EXPIRY, -1)).status()).toBe(422); // strike gt=0
-      expect((await opt.optStrikes(api, p.traderAccess, p.brokerAccountId, 'AAPL', EXPIRY, 'bogus')).status()).toBe(422); // right pattern
+      expect((await opt.optStrikes(api, p.traderAccess, p.brokerAccountId, 'AAPL', EXPIRY, 'bogus')).status()).toBe(
+        422,
+      ); // right pattern
     } finally {
       p.cleanup();
     }
   });
 
-  test('TC-OPT-001-004 quote for a fake account returns nulls; debug=1 discloses adapter internals @options @api @P2 @security', async ({ api, config }, info) => {
+  test('TC-OPT-001-004 quote for a fake account returns nulls; debug=1 discloses adapter internals @options @api @P2 @security', async ({
+    api,
+    config,
+  }, info) => {
     meta(info, 'OPT-001');
     const p = await provisionFanout(api, config, []);
     try {
@@ -45,7 +53,10 @@ test.describe('Options chain (offline surfaces)', () => {
     }
   });
 
-  test('TC-OPT-001-006 options endpoints are owner-scoped — another user gets 404 @options @api @P1 @security', async ({ api, config }, info) => {
+  test('TC-OPT-001-006 options endpoints are owner-scoped — another user gets 404 @options @api @P1 @security', async ({
+    api,
+    config,
+  }, info) => {
     meta(info, 'OPT-001');
     const p = await provisionFanout(api, config, []);
     const attacker = await auth.registerAndLogin(api, makeUser('trader'));

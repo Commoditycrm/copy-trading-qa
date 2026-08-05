@@ -12,7 +12,11 @@ import { MockBroker } from '../../common/mockBrokerClient.js';
 test.describe('WF-20 Notifications (UI)', () => {
   test.skip(({ config }) => config.envName !== 'local', 'UI E2E runs against the local full stack.');
 
-  test('TC-WF-20-001 unread badge, inbox listing, and mark-all-read @ui @P2 @integration', async ({ page, config, api }, info) => {
+  test('TC-WF-20-001 unread badge, inbox listing, and mark-all-read @ui @P2 @integration', async ({
+    page,
+    config,
+    api,
+  }, info) => {
     meta(info, 'WF-20', ['NOTIF-001']);
     const u = makeUser('subscriber');
     const acct = await authApi.registerAndLogin(api, u);

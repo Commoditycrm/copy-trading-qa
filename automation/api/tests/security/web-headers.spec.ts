@@ -10,12 +10,20 @@ import { makeUser } from '../../../common/factory.js';
 import { registerAndLogin } from '../../clients/authApi.js';
 import { deleteUser } from '../../../common/localAdmin.js';
 
-const SEC_HEADERS = ['content-security-policy', 'strict-transport-security', 'x-frame-options', 'x-content-type-options', 'referrer-policy'];
+const SEC_HEADERS = [
+  'content-security-policy',
+  'strict-transport-security',
+  'x-frame-options',
+  'x-content-type-options',
+  'referrer-policy',
+];
 
 test.describe('SA-005 web security headers & CORS', () => {
   test.skip(({ config }) => config.envName !== 'local', 'Security suite runs against the local stack.');
 
-  test('SA-005 CORS does not reflect an arbitrary origin (isolation control) @security @api @P1 @headers', async ({ api }, info) => {
+  test('SA-005 CORS does not reflect an arbitrary origin (isolation control) @security @api @P1 @headers', async ({
+    api,
+  }, info) => {
     meta(info, 'AUTH-002');
     const res = await api.get('/api/health', { headers: { Origin: 'https://evil.example' } });
     const allow = res.headers()['access-control-allow-origin'];
@@ -23,7 +31,10 @@ test.describe('SA-005 web security headers & CORS', () => {
     expect(allow ?? '', 'no wildcard-with-anything').not.toBe('*');
   });
 
-  test('SA-005 POTENTIAL — the app layer emits no security headers (edge-dependent, capture posture) @security @api @P2 @headers', async ({ api, config }, info) => {
+  test('SA-005 POTENTIAL — the app layer emits no security headers (edge-dependent, capture posture) @security @api @P2 @headers', async ({
+    api,
+    config,
+  }, info) => {
     meta(info, 'AUTH-002');
     const u = makeUser('subscriber');
     const acct = await registerAndLogin(api, u);

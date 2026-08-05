@@ -29,7 +29,11 @@ const H = (ip) => ({ headers: { 'Content-Type': 'application/json', 'X-Forwarded
 export function setup() {
   const email = `qa+perflogin-${Date.now()}@qa.kopyya.dev`;
   const password = 'PerfLoad!2026x';
-  const r = http.post(`${BASE}/api/auth/register`, JSON.stringify({ email, password, role: 'subscriber', display_name: 'perf' }), H('10.9.0.1'));
+  const r = http.post(
+    `${BASE}/api/auth/register`,
+    JSON.stringify({ email, password, role: 'subscriber', display_name: 'perf' }),
+    H('10.9.0.1'),
+  );
   check(r, { 'setup register 2xx': (x) => x.status < 300 });
   return { email, password };
 }

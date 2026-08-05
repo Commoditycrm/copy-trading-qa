@@ -9,7 +9,9 @@ import * as trades from '../../clients/tradesApi.js';
 import { marketOrder } from '../../clients/tradesApi.js';
 
 test.describe('AUTHZ-001 Trading role guard', () => {
-  test('TC-AUTHZ-001-013 non-trader cannot place an order → 403 trader_only @trading @api @P1 @security', async ({ api }, info) => {
+  test('TC-AUTHZ-001-013 non-trader cannot place an order → 403 trader_only @trading @api @P1 @security', async ({
+    api,
+  }, info) => {
     meta(info, 'AUTHZ-001', ['TRADE-001']);
     const sub = makeUser('subscriber');
     const { access } = await auth.registerAndLogin(api, sub);

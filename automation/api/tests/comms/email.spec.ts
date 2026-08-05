@@ -15,7 +15,10 @@ const FRONTEND = 'http://localhost:3000';
 test.describe('Email / SendGrid (log sink)', () => {
   test.skip(({ config }) => config.envName !== 'local', 'Requires the local stack.');
 
-  test('TC-INTEG-004-001 registration queues a verification email whose link uses the frontend base URL @comms @api @P1 @integration', async ({ api, config }, info) => {
+  test('TC-INTEG-004-001 registration queues a verification email whose link uses the frontend base URL @comms @api @P1 @integration', async ({
+    api,
+    config,
+  }, info) => {
     meta(info, 'INTEG-004');
     const u = makeUser('subscriber');
     try {
@@ -26,7 +29,10 @@ test.describe('Email / SendGrid (log sink)', () => {
     }
   });
 
-  test('TC-INTEG-004-006 with SendGrid unconfigured the send is logged, not sent (log mode) @comms @api @P1 @observability', async ({ api, config }, info) => {
+  test('TC-INTEG-004-006 with SendGrid unconfigured the send is logged, not sent (log mode) @comms @api @P1 @observability', async ({
+    api,
+    config,
+  }, info) => {
     meta(info, 'INTEG-004');
     const u = makeUser('subscriber');
     try {
@@ -37,7 +43,10 @@ test.describe('Email / SendGrid (log sink)', () => {
     }
   });
 
-  test('TC-INTEG-004-003 forgot-password queues a reset email with a bound reset link @comms @api @P1 @integration', async ({ api, config }, info) => {
+  test('TC-INTEG-004-003 forgot-password queues a reset email with a bound reset link @comms @api @P1 @integration', async ({
+    api,
+    config,
+  }, info) => {
     meta(info, 'INTEG-004', ['AUTH-004']);
     const u = makeUser('subscriber');
     try {
@@ -49,7 +58,10 @@ test.describe('Email / SendGrid (log sink)', () => {
     }
   });
 
-  test('TC-INTEG-004-011 forgot-password is anti-enumeration — unknown email is a generic 200 with no email @comms @api @P1 @security', async ({ api, config }, info) => {
+  test('TC-INTEG-004-011 forgot-password is anti-enumeration — unknown email is a generic 200 with no email @comms @api @P1 @security', async ({
+    api,
+    config,
+  }, info) => {
     meta(info, 'INTEG-004', ['AUTH-004']);
     const unknown = `qa+ghost-${Date.now()}@qa.kopyya.dev`;
     const res = await auth.forgotPassword(api, unknown, '10.9.9.9');
@@ -59,7 +71,10 @@ test.describe('Email / SendGrid (log sink)', () => {
     expect(emailLoggedTo(unknown), 'no email for a non-existent account').toBe(false);
   });
 
-  test('TC-INTEG-004-004 email-change sends a confirmation to the new address and a notice to the old @comms @api @P1 @integration', async ({ api, config }, info) => {
+  test('TC-INTEG-004-004 email-change sends a confirmation to the new address and a notice to the old @comms @api @P1 @integration', async ({
+    api,
+    config,
+  }, info) => {
     meta(info, 'INTEG-004', ['AUTH-005']);
     const u = makeUser('subscriber');
     const newEmail = `qa+chg-${Date.now()}@qa.kopyya.dev`;
@@ -74,7 +89,10 @@ test.describe('Email / SendGrid (log sink)', () => {
     }
   });
 
-  test('TC-INTEG-004-005 a follow request queues an email to the trader @comms @api @P2 @integration', async ({ api, config }, info) => {
+  test('TC-INTEG-004-005 a follow request queues an email to the trader @comms @api @P2 @integration', async ({
+    api,
+    config,
+  }, info) => {
     meta(info, 'INTEG-004', ['FOLLOW-001']);
     const traderU = makeUser('trader');
     const subU = makeUser('subscriber');

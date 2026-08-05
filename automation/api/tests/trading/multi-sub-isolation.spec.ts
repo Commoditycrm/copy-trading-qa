@@ -17,7 +17,10 @@ const status = (cfg: any, parent: string, user: string) => childForUser(cfg, par
 test.describe('Multi-subscriber isolation (mock broker)', () => {
   test.skip(({ config }) => config.envName !== 'local', 'Requires the local stack + mock broker.');
 
-  test('TC-COPY-001-006 one subscriber failure does not abort the others (A ok / B reject / C transient) @trading @api @P0 @recovery', async ({ api, config }, info) => {
+  test('TC-COPY-001-006 one subscriber failure does not abort the others (A ok / B reject / C transient) @trading @api @P0 @recovery', async ({
+    api,
+    config,
+  }, info) => {
     meta(info, 'COPY-001');
     const mb = new MockBroker(config);
     await mb.resetScenario();

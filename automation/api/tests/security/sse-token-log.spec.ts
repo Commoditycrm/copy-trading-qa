@@ -16,7 +16,10 @@ import { deleteUser } from '../../../common/localAdmin.js';
 const compose = resolve(dirname(fileURLToPath(import.meta.url)), '../../../local-stack/docker-compose.qa.yml');
 
 function backendLogContains(needle: string): boolean {
-  const out = execSync(`docker compose -f "${compose}" logs backend --since 60s`, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+  const out = execSync(`docker compose -f "${compose}" logs backend --since 60s`, {
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'ignore'],
+  });
   return out.includes(needle);
 }
 
@@ -26,7 +29,10 @@ async function pokeSse(baseUrl: string, token: string): Promise<void> {
   const timer = setTimeout(() => ctrl.abort(), 1500);
   try {
     const r = await fetch(`${baseUrl}/api/events?token=${encodeURIComponent(token)}`, { signal: ctrl.signal });
-    await r.body?.getReader().read().catch(() => {});
+    await r.body
+      ?.getReader()
+      .read()
+      .catch(() => {});
   } catch {
     /* aborted — the request line is already logged */
   } finally {
@@ -38,7 +44,10 @@ async function pokeSse(baseUrl: string, token: string): Promise<void> {
 test.describe('SA-007 SSE token exposure in logs', () => {
   test.skip(({ config }) => config.envName !== 'local', 'Security suite runs against the local stack.');
 
-  test('SA-007 DEF-SEC-001 — the SSE JWT is written to the backend access log in cleartext @security @api @P2 @data-exposure', async ({ api, config }, info) => {
+  test('SA-007 DEF-SEC-001 — the SSE JWT is written to the backend access log in cleartext @security @api @P2 @data-exposure', async ({
+    api,
+    config,
+  }, info) => {
     meta(info, 'NOTIF-001', ['AUTH-002']);
     const u = makeUser('subscriber');
     const acct = await registerAndLogin(api, u);

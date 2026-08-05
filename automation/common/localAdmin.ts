@@ -15,33 +15,41 @@ function assertLocal(cfg: QaConfig): void {
   if (cfg.envName !== 'local') throw new Error(`[SAFETY] localAdmin refuses to run in env=${cfg.envName} (local only)`);
 }
 function assertSynthetic(email: string): void {
-  if (!email.endsWith('@qa.kopyya.dev')) throw new Error(`[SAFETY] localAdmin only operates on @qa.kopyya.dev test users (got ${email})`);
+  if (!email.endsWith('@qa.kopyya.dev'))
+    throw new Error(`[SAFETY] localAdmin only operates on @qa.kopyya.dev test users (got ${email})`);
 }
 function psql(sql: string): string {
-  return execSync(`docker compose -f "${compose}" exec -T db psql -U qa -d copytrading_qa -tAc "${sql.replace(/"/g, '\\"')}"`, {
-    encoding: 'utf8',
-    stdio: ['ignore', 'pipe', 'ignore'],
-  }).trim();
+  return execSync(
+    `docker compose -f "${compose}" exec -T db psql -U qa -d copytrading_qa -tAc "${sql.replace(/"/g, '\\"')}"`,
+    {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    },
+  ).trim();
 }
 
 /** Deactivate (is_active=false) exactly one namespaced test user. */
 export function deactivateUser(cfg: QaConfig, email: string): void {
-  assertLocal(cfg); assertSynthetic(email);
+  assertLocal(cfg);
+  assertSynthetic(email);
   psql(`UPDATE users SET is_active=false WHERE email='${email}'`);
 }
 /** Reactivate a namespaced test user (cleanup/restore). */
 export function reactivateUser(cfg: QaConfig, email: string): void {
-  assertLocal(cfg); assertSynthetic(email);
+  assertLocal(cfg);
+  assertSynthetic(email);
   psql(`UPDATE users SET is_active=true WHERE email='${email}'`);
 }
 /** Hard-delete a namespaced test user (cascade) — cleanup. */
 export function deleteUser(cfg: QaConfig, email: string): void {
-  assertLocal(cfg); assertSynthetic(email);
+  assertLocal(cfg);
+  assertSynthetic(email);
   psql(`DELETE FROM users WHERE email='${email}'`);
 }
 /** Read is_active for assertions. */
 export function isActive(cfg: QaConfig, email: string): boolean {
-  assertLocal(cfg); assertSynthetic(email);
+  assertLocal(cfg);
+  assertSynthetic(email);
   return psql(`SELECT is_active FROM users WHERE email='${email}'`) === 't';
 }
 
@@ -62,19 +70,22 @@ export function ensureAdminEnumLabel(cfg: QaConfig): void {
 
 /** Promote a namespaced synthetic user to a WORKING admin (correct 'ADMIN' label). LOCAL-ONLY. */
 export function promoteToAdmin(cfg: QaConfig, email: string): void {
-  assertLocal(cfg); assertSynthetic(email);
+  assertLocal(cfg);
+  assertSynthetic(email);
   ensureAdminEnumLabel(cfg);
   psql(`UPDATE users SET role='ADMIN' WHERE email='${email}'`);
 }
 
 /** Promote to the DEFECTIVE lowercase 'admin' label as shipped — reproduces DEF-ADMIN-001. LOCAL-ONLY. */
 export function promoteToBrokenAdmin(cfg: QaConfig, email: string): void {
-  assertLocal(cfg); assertSynthetic(email);
+  assertLocal(cfg);
+  assertSynthetic(email);
   psql(`UPDATE users SET role='admin' WHERE email='${email}'`);
 }
 
 /** Read a user's role label verbatim (case-sensitive) for assertions. */
 export function userRole(cfg: QaConfig, email: string): string {
-  assertLocal(cfg); assertSynthetic(email);
+  assertLocal(cfg);
+  assertSynthetic(email);
   return psql(`SELECT lower(role::text) FROM users WHERE email='${email}'`);
 }

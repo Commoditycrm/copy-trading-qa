@@ -12,7 +12,10 @@ function ping() {
       r.on('end', () => res({ ok: r.statusCode === 200, body }));
     });
     req.on('error', () => res({ ok: false }));
-    req.setTimeout(3000, () => { req.destroy(); res({ ok: false }); });
+    req.setTimeout(3000, () => {
+      req.destroy();
+      res({ ok: false });
+    });
   });
 }
 

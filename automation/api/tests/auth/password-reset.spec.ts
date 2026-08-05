@@ -22,7 +22,9 @@ test.describe('AUTH-004 Password reset', () => {
     expect((await auth.forgotPassword(api, u.email, u.clientIp)).status()).toBe(200);
   });
 
-  test('TC-AUTH-004-002 reset with a valid token sets a new password @auth @api @P1 @integration', async ({ api }, info) => {
+  test('TC-AUTH-004-002 reset with a valid token sets a new password @auth @api @P1 @integration', async ({
+    api,
+  }, info) => {
     meta(info, 'AUTH-004', ['AUTH-002']);
     const u = makeUser('subscriber');
     const id = await registerId(api, u);
@@ -46,7 +48,9 @@ test.describe('AUTH-004 Password reset', () => {
     expect((await auth.resetPassword(api, token!, 'Qa!Twice123')).status()).toBe(400); // reuse rejected
   });
 
-  test('TC-AUTH-004-004 reset accepts a weaker password than registration — DEFECT CONFIRM @auth @api @P1 @security', async ({ api }, info) => {
+  test('TC-AUTH-004-004 reset accepts a weaker password than registration — DEFECT CONFIRM @auth @api @P1 @security', async ({
+    api,
+  }, info) => {
     meta(info, 'AUTH-004', ['AUTH-001']);
     const u = makeUser('subscriber');
     const id = await registerId(api, u);
@@ -57,16 +61,23 @@ test.describe('AUTH-004 Password reset', () => {
     const res = await auth.resetPassword(api, token!, weak);
     await info.attach('reset-weak-status', { body: String(res.status()), contentType: 'text/plain' });
     expect(res.status()).toBe(200); // documented asymmetry
-    info.annotations.push({ type: 'potential_defect', description: 'reset accepts weaker password than registration — baseline §27' });
+    info.annotations.push({
+      type: 'potential_defect',
+      description: 'reset accepts weaker password than registration — baseline §27',
+    });
   });
 
-  test('TC-AUTH-004-005 forgot-password for unknown email still 200 (no enumeration) @auth @api @P2 @negative', async ({ api }, info) => {
+  test('TC-AUTH-004-005 forgot-password for unknown email still 200 (no enumeration) @auth @api @P2 @negative', async ({
+    api,
+  }, info) => {
     meta(info, 'AUTH-004');
     const res = await auth.forgotPassword(api, `qa+nobody-${Date.now()}@qa.kopyya.dev`);
     expect(res.status()).toBe(200);
   });
 
-  test('TC-AUTH-004-006 mixed-case forgot-password no-match — DEFECT CONFIRM @auth @api @P2 @negative', async ({ api }, info) => {
+  test('TC-AUTH-004-006 mixed-case forgot-password no-match — DEFECT CONFIRM @auth @api @P2 @negative', async ({
+    api,
+  }, info) => {
     meta(info, 'AUTH-004');
     const u = makeUser('subscriber');
     const id = await registerId(api, u);
@@ -77,6 +88,10 @@ test.describe('AUTH-004 Password reset', () => {
     await new Promise((r) => setTimeout(r, 4000));
     const token = tokenForSubject({ userId: id, type: 'reset' });
     await info.attach('reset-token-for-mixed-case', { body: String(token), contentType: 'text/plain' });
-    if (token === null) info.annotations.push({ type: 'potential_defect', description: 'mixed-case forgot-password produced NO reset token — baseline §27' });
+    if (token === null)
+      info.annotations.push({
+        type: 'potential_defect',
+        description: 'mixed-case forgot-password produced NO reset token — baseline §27',
+      });
   });
 });

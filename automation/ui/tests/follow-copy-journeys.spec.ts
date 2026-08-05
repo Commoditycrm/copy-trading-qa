@@ -14,7 +14,11 @@ import { subSetting } from '../../common/tradingSetup.js';
 test.describe('WF-08/09 Follow + copy journeys (UI)', () => {
   test.skip(({ config }) => config.envName !== 'local', 'UI E2E runs against the local full stack.');
 
-  test('TC-WF-09-001 subscriber sets the copy multiplier and it persists across reload @ui @P1 @integration', async ({ page, config, api }, info) => {
+  test('TC-WF-09-001 subscriber sets the copy multiplier and it persists across reload @ui @P1 @integration', async ({
+    page,
+    config,
+    api,
+  }, info) => {
     meta(info, 'WF-09', ['RISK-001', 'COPY-001']);
     const u = makeUser('subscriber');
     const acct = await authApi.registerAndLogin(api, u);
@@ -34,7 +38,12 @@ test.describe('WF-08/09 Follow + copy journeys (UI)', () => {
     }
   });
 
-  test('TC-WF-08-001 subscriber requests to follow a trader and the trader approves @ui @P1 @integration', async ({ page, browser, config, api }, info) => {
+  test('TC-WF-08-001 subscriber requests to follow a trader and the trader approves @ui @P1 @integration', async ({
+    page,
+    browser,
+    config,
+    api,
+  }, info) => {
     meta(info, 'WF-08', ['FOLLOW-001', 'AUTHZ-001']);
     const traderU = makeUser('trader');
     const subU = makeUser('subscriber');
@@ -71,7 +80,11 @@ test.describe('WF-08/09 Follow + copy journeys (UI)', () => {
     }
   });
 
-  test('TC-WF-09-002 subscriber toggles the copy master switch @ui @P2 @integration', async ({ page, config, api }, info) => {
+  test('TC-WF-09-002 subscriber toggles the copy master switch @ui @P2 @integration', async ({
+    page,
+    config,
+    api,
+  }, info) => {
     meta(info, 'WF-09', ['COPY-001']);
     const u = makeUser('subscriber');
     const acct = await authApi.registerAndLogin(api, u);

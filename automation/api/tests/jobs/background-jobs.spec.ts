@@ -11,7 +11,14 @@ import * as s from '../../clients/settingsApi.js';
 import { provisionFanout } from '../trading/helpers.js';
 import { MockBroker } from '../../../common/mockBrokerClient.js';
 import {
-  orderRow, childForUser, childId, auditByActor, notifCount, seedNotificationAge, backdateRetryAt, subSetting,
+  orderRow,
+  childForUser,
+  childId,
+  auditByActor,
+  notifCount,
+  seedNotificationAge,
+  backdateRetryAt,
+  subSetting,
 } from '../../../common/tradingSetup.js';
 
 const childStatus = (cfg: any, parent: string, user: string) => childForUser(cfg, parent, user)?.status ?? 'none';
@@ -19,7 +26,10 @@ const childStatus = (cfg: any, parent: string, user: string) => childForUser(cfg
 test.describe('Background jobs & recovery', () => {
   test.skip(({ config }) => config.envName !== 'local', 'Requires the local stack + mock broker.');
 
-  test('TC-JOB-007-010 day-start equity snapshot is recorded once per account/day (dedup) @jobs @api @P1 @data-integrity', async ({ api, config }, info) => {
+  test('TC-JOB-007-010 day-start equity snapshot is recorded once per account/day (dedup) @jobs @api @P1 @data-integrity', async ({
+    api,
+    config,
+  }, info) => {
     meta(info, 'JOB-007');
     const mb = new MockBroker(config);
     const p = await provisionFanout(api, config, [{}]);
@@ -36,7 +46,10 @@ test.describe('Background jobs & recovery', () => {
     }
   });
 
-  test('TC-JOB-013-002 the live worker retry scheduler resumes a due RETRY_PENDING order @jobs @api @P1 @recovery', async ({ api, config }, info) => {
+  test('TC-JOB-013-002 the live worker retry scheduler resumes a due RETRY_PENDING order @jobs @api @P1 @recovery', async ({
+    api,
+    config,
+  }, info) => {
     meta(info, 'JOB-013');
     const mb = new MockBroker(config);
     await mb.resetScenario();
@@ -58,7 +71,10 @@ test.describe('Background jobs & recovery', () => {
     }
   });
 
-  test('TC-JOB-001-001 crash recovery replays an orphaned PENDING child order @jobs @api @P1 @recovery', async ({ api, config }, info) => {
+  test('TC-JOB-001-001 crash recovery replays an orphaned PENDING child order @jobs @api @P1 @recovery', async ({
+    api,
+    config,
+  }, info) => {
     meta(info, 'JOB-001');
     const mb = new MockBroker(config);
     await mb.resetScenario();
@@ -78,7 +94,10 @@ test.describe('Background jobs & recovery', () => {
     }
   });
 
-  test('TC-JOB-001-002 crash recovery is idempotent — a second sweep does not re-place @jobs @api @P0 @data-integrity', async ({ api, config }, info) => {
+  test('TC-JOB-001-002 crash recovery is idempotent — a second sweep does not re-place @jobs @api @P0 @data-integrity', async ({
+    api,
+    config,
+  }, info) => {
     meta(info, 'JOB-001');
     const mb = new MockBroker(config);
     await mb.resetScenario();
@@ -99,7 +118,10 @@ test.describe('Background jobs & recovery', () => {
     }
   });
 
-  test('TC-COPY-003-003 retry exhaustion → final REJECTED + copy.retry_failed notification @jobs @api @P1 @recovery', async ({ api, config }, info) => {
+  test('TC-COPY-003-003 retry exhaustion → final REJECTED + copy.retry_failed notification @jobs @api @P1 @recovery', async ({
+    api,
+    config,
+  }, info) => {
     meta(info, 'COPY-003', ['JOB-013']);
     const mb = new MockBroker(config);
     await mb.resetScenario();
@@ -121,7 +143,10 @@ test.describe('Background jobs & recovery', () => {
     }
   });
 
-  test('TC-NOTIF-001-013 creating a notification purges that user’s notifications older than 30 days @jobs @api @P2 @data-integrity', async ({ api, config }, info) => {
+  test('TC-NOTIF-001-013 creating a notification purges that user’s notifications older than 30 days @jobs @api @P2 @data-integrity', async ({
+    api,
+    config,
+  }, info) => {
     meta(info, 'NOTIF-001');
     const mb = new MockBroker(config);
     const p = await provisionFanout(api, config, [{}]);
@@ -139,7 +164,10 @@ test.describe('Background jobs & recovery', () => {
     }
   });
 
-  test('TC-JOB-007-004 poller processes accounts independently — one account’s work does not affect another @jobs @api @P0 @recovery', async ({ api, config }, info) => {
+  test('TC-JOB-007-004 poller processes accounts independently — one account’s work does not affect another @jobs @api @P0 @recovery', async ({
+    api,
+    config,
+  }, info) => {
     meta(info, 'JOB-007');
     const mb = new MockBroker(config);
     await mb.resetScenario();
@@ -158,7 +186,10 @@ test.describe('Background jobs & recovery', () => {
     }
   });
 
-  test('TC-JOB-007-008 poller enforces the daily-loss kill switch from the broker snapshot @jobs @api @P0 @recovery', async ({ api, config }, info) => {
+  test('TC-JOB-007-008 poller enforces the daily-loss kill switch from the broker snapshot @jobs @api @P0 @recovery', async ({
+    api,
+    config,
+  }, info) => {
     meta(info, 'JOB-007', ['RISK-001']);
     const mb = new MockBroker(config);
     await mb.resetScenario();
@@ -177,7 +208,10 @@ test.describe('Background jobs & recovery', () => {
     }
   });
 
-  test('TC-JOB-010-005 position reconciler safety — an empty broker read never flattens held positions (idempotent) @jobs @api @P0 @data-integrity', async ({ api, config }, info) => {
+  test('TC-JOB-010-005 position reconciler safety — an empty broker read never flattens held positions (idempotent) @jobs @api @P0 @data-integrity', async ({
+    api,
+    config,
+  }, info) => {
     meta(info, 'JOB-010');
     const mb = new MockBroker(config);
     await mb.resetScenario();
@@ -194,14 +228,19 @@ test.describe('Background jobs & recovery', () => {
       expect(Number(orderRow(config, cid).filled_quantity)).toBe(10);
       // broker reports NO positions → reconciler must NOT treat empty as flat (safety guard)
       await mb.setPosition(sub.account_id!, []);
-      expect(mb.reconcilePosition(sub.account_id!, true).synthetic_closes, 'apply must not flatten on empty read').toBe(0);
+      expect(mb.reconcilePosition(sub.account_id!, true).synthetic_closes, 'apply must not flatten on empty read').toBe(
+        0,
+      );
       expect(mb.reconcilePosition(sub.account_id!, true).synthetic_closes, 'idempotent — still no writes').toBe(0);
     } finally {
       p.cleanup();
     }
   });
 
-  test('TC-ADMIN-006-001 position reconciler dry-run writes no synthetic closes @jobs @api @P1 @data-integrity', async ({ api, config }, info) => {
+  test('TC-ADMIN-006-001 position reconciler dry-run writes no synthetic closes @jobs @api @P1 @data-integrity', async ({
+    api,
+    config,
+  }, info) => {
     meta(info, 'ADMIN-006', ['JOB-010']);
     const mb = new MockBroker(config);
     await mb.resetScenario();
@@ -221,7 +260,10 @@ test.describe('Background jobs & recovery', () => {
     }
   });
 
-  test('TC-JOB-009-001 EOD sweep flattens a same-day-expiry option in the close window (QA-injected clock) @jobs @api @P1 @integration', async ({ api, config }, info) => {
+  test('TC-JOB-009-001 EOD sweep flattens a same-day-expiry option in the close window (QA-injected clock) @jobs @api @P1 @integration', async ({
+    api,
+    config,
+  }, info) => {
     meta(info, 'JOB-009');
     const mb = new MockBroker(config);
     await mb.resetScenario();
@@ -235,11 +277,21 @@ test.describe('Background jobs & recovery', () => {
       else if (d.getUTCDay() === 6) d.setUTCDate(d.getUTCDate() - 1);
       const day = d.toISOString().slice(0, 10);
       await mb.setPosition(sub.account_id!, [
-        { symbol: 'AAPL', quantity: 1, instrument_type: 'option', option_expiry: day, option_strike: 200, option_right: 'call' },
+        {
+          symbol: 'AAPL',
+          quantity: 1,
+          instrument_type: 'option',
+          option_expiry: day,
+          option_strike: 200,
+          option_right: 'call',
+        },
       ]);
       mb.eodTick(`${day}T15:50:00-04:00`); // inside the last 15 minutes before 16:00 ET
       // the EOD worker placed a closing order on the subscriber's account
-      expect(await mb.callCount('place', sub.account_id!), 'EOD placed a close for the 0DTE option').toBeGreaterThanOrEqual(1);
+      expect(
+        await mb.callCount('place', sub.account_id!),
+        'EOD placed a close for the 0DTE option',
+      ).toBeGreaterThanOrEqual(1);
     } finally {
       p.cleanup();
     }

@@ -22,7 +22,9 @@ test.describe('A11Y responsive reflow', () => {
   ];
 
   for (const c of cases) {
-    test(`A11Y-REFLOW /login reflows with no horizontal scroll @ ${c.label} @a11y @P1 @responsive`, async ({ page }, info) => {
+    test(`A11Y-REFLOW /login reflows with no horizontal scroll @ ${c.label} @a11y @P1 @responsive`, async ({
+      page,
+    }, info) => {
       meta(info, 'AUTH-002');
       await page.setViewportSize({ width: c.w, height: c.h });
       await page.goto('/login', { waitUntil: 'domcontentloaded' });
@@ -33,7 +35,10 @@ test.describe('A11Y responsive reflow', () => {
     });
   }
 
-  test('A11Y-REFLOW /dashboard reflows at 320px with no horizontal scroll @a11y @P1 @responsive', async ({ page, config }, info) => {
+  test('A11Y-REFLOW /dashboard reflows at 320px with no horizontal scroll @a11y @P1 @responsive', async ({
+    page,
+    config,
+  }, info) => {
     meta(info, 'AUTH-001');
     const s = await makeSession('subscriber');
     try {

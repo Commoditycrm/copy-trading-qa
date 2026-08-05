@@ -10,7 +10,9 @@ import { tokenForSubject } from '../../../common/emailSink.js';
 const newEmail = () => `qa+new-${Date.now()}-${Math.floor(Math.random() * 1e4)}@qa.kopyya.dev`;
 
 test.describe('AUTH-005 Email change', () => {
-  test('TC-AUTH-005-003 successful email change (password + verify) applies only after verify @auth @api @P2 @integration', async ({ api }, info) => {
+  test('TC-AUTH-005-003 successful email change (password + verify) applies only after verify @auth @api @P2 @integration', async ({
+    api,
+  }, info) => {
     meta(info, 'AUTH-005', ['AUTH-002']);
     const u = makeUser('subscriber');
     const { access, id } = await auth.registerAndLogin(api, u);
@@ -22,14 +24,18 @@ test.describe('AUTH-005 Email change', () => {
     expect((await auth.login(api, target, u.password, u.clientIp)).status()).toBe(401);
     // confirmation to the NEW address carries an email_change token
     let tok: string | null = null;
-    await expect.poll(() => (tok = tokenForSubject({ userId: id, type: 'email_change' })), { timeout: 15000 }).toBeTruthy();
+    await expect
+      .poll(() => (tok = tokenForSubject({ userId: id, type: 'email_change' })), { timeout: 15000 })
+      .toBeTruthy();
     expect((await auth.verifyEmailChange(api, tok!)).status()).toBe(200);
     // after verify: new email logs in, old does not
     expect((await auth.login(api, target, u.password, u.clientIp)).status()).toBe(200);
     expect((await auth.login(api, u.email, u.password, u.clientIp)).status()).toBe(401);
   });
 
-  test('TC-AUTH-005-004 change-email wrong password 403; rate-limited (429 + Retry-After) @auth @api @P2 @negative @recovery', async ({ api }, info) => {
+  test('TC-AUTH-005-004 change-email wrong password 403; rate-limited (429 + Retry-After) @auth @api @P2 @negative @recovery', async ({
+    api,
+  }, info) => {
     meta(info, 'AUTH-005');
     const u = makeUser('subscriber');
     const { access } = await auth.registerAndLogin(api, u);
@@ -50,7 +56,9 @@ test.describe('AUTH-005 Email change', () => {
     expect(saw429, 'expected a 429 email-change throttle within 8 requests').toBe(true);
   });
 
-  test('TC-AUTH-005-005 verify-email-change to a taken address is rejected (409) @auth @api @P2 @data-integrity', async ({ api }, info) => {
+  test('TC-AUTH-005-005 verify-email-change to a taken address is rejected (409) @auth @api @P2 @data-integrity', async ({
+    api,
+  }, info) => {
     meta(info, 'AUTH-005');
     const a = makeUser('subscriber');
     const b = makeUser('subscriber');
@@ -63,7 +71,9 @@ test.describe('AUTH-005 Email change', () => {
     } else {
       expect(ce.status()).toBe(200);
       let tok: string | null = null;
-      await expect.poll(() => (tok = tokenForSubject({ userId: A.id, type: 'email_change' })), { timeout: 15000 }).toBeTruthy();
+      await expect
+        .poll(() => (tok = tokenForSubject({ userId: A.id, type: 'email_change' })), { timeout: 15000 })
+        .toBeTruthy();
       const v = await auth.verifyEmailChange(api, tok!);
       expect(v.status()).toBe(409);
       expect((await v.json()).detail).toBe('email_taken');
@@ -72,7 +82,9 @@ test.describe('AUTH-005 Email change', () => {
     expect((await auth.login(api, a.email, a.password, a.clientIp)).status()).toBe(200);
   });
 
-  test('TC-AUTH-005-002 stale verification token after the email changes is rejected (400) @auth @api @P2 @negative', async ({ api }, info) => {
+  test('TC-AUTH-005-002 stale verification token after the email changes is rejected (400) @auth @api @P2 @negative', async ({
+    api,
+  }, info) => {
     meta(info, 'AUTH-005');
     const u = makeUser('subscriber');
     const { access, id } = await auth.registerAndLogin(api, u);
@@ -83,7 +95,9 @@ test.describe('AUTH-005 Email change', () => {
     const target = newEmail();
     expect((await auth.changeEmail(api, access, target, u.password)).status()).toBe(200);
     let ecTok: string | null = null;
-    await expect.poll(() => (ecTok = tokenForSubject({ userId: id, type: 'email_change' })), { timeout: 15000 }).toBeTruthy();
+    await expect
+      .poll(() => (ecTok = tokenForSubject({ userId: id, type: 'email_change' })), { timeout: 15000 })
+      .toBeTruthy();
     expect((await auth.verifyEmailChange(api, ecTok!)).status()).toBe(200);
     // the OLD verify token (eml=original) is now stale → 400
     const res = await auth.verifyEmail(api, vTok!);

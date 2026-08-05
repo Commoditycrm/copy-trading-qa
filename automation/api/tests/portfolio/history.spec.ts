@@ -12,14 +12,18 @@ import { provisionFanout } from '../trading/helpers.js';
 
 async function seedOrders(api: any, p: any, symbols: string[]) {
   const ids: string[] = [];
-  for (const s of symbols) ids.push((await (await trades.placeOrder(api, p.traderAccess, p.brokerAccountId, marketOrder(s, 3))).json()).id);
+  for (const s of symbols)
+    ids.push((await (await trades.placeOrder(api, p.traderAccess, p.brokerAccountId, marketOrder(s, 3))).json()).id);
   return ids;
 }
 
 test.describe('Trade history', () => {
   test.skip(({ config }) => config.envName !== 'local', 'Requires the local stack.');
 
-  test('TC-HIST-001-001 list returns the caller’s trades (newest first, limit honoured) @portfolio @api @P1 @data-integrity', async ({ api, config }, info) => {
+  test('TC-HIST-001-001 list returns the caller’s trades (newest first, limit honoured) @portfolio @api @P1 @data-integrity', async ({
+    api,
+    config,
+  }, info) => {
     meta(info, 'HIST-001');
     const p = await provisionFanout(api, config, []);
     try {
@@ -33,7 +37,10 @@ test.describe('Trade history', () => {
     }
   });
 
-  test('TC-HIST-001-002 paged trades — envelope total, limit/offset, symbol search @portfolio @api @P1 @data-integrity', async ({ api, config }, info) => {
+  test('TC-HIST-001-002 paged trades — envelope total, limit/offset, symbol search @portfolio @api @P1 @data-integrity', async ({
+    api,
+    config,
+  }, info) => {
     meta(info, 'HIST-001');
     const p = await provisionFanout(api, config, []);
     try {
@@ -63,7 +70,10 @@ test.describe('Trade history', () => {
     }
   });
 
-  test('TC-HIST-001-004 get-one is owner-only (404 for another user) @portfolio @api @P1 @security', async ({ api, config }, info) => {
+  test('TC-HIST-001-004 get-one is owner-only (404 for another user) @portfolio @api @P1 @security', async ({
+    api,
+    config,
+  }, info) => {
     meta(info, 'HIST-001');
     const p = await provisionFanout(api, config, []);
     const attacker = await auth.registerAndLogin(api, makeUser('trader'));

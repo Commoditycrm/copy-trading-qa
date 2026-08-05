@@ -11,7 +11,14 @@ import * as trades from '../../clients/tradesApi.js';
 import { marketOrder } from '../../clients/tradesApi.js';
 import { provisionFanout } from './helpers.js';
 import { MockBroker } from '../../../common/mockBrokerClient.js';
-import { orderRow, childForUser, childId, auditCount, newestOrderIdForUser, otherParentOrderId } from '../../../common/tradingSetup.js';
+import {
+  orderRow,
+  childForUser,
+  childId,
+  auditCount,
+  newestOrderIdForUser,
+  otherParentOrderId,
+} from '../../../common/tradingSetup.js';
 
 const SYM = 'NVDA';
 const childStatus = (cfg: any, parent: string, user: string) => childForUser(cfg, parent, user)?.status ?? 'none';
@@ -43,7 +50,10 @@ async function fireClose(api: any, config: any, p: any, entryId: string, qty: nu
 test.describe('Close / positions (mock broker)', () => {
   test.skip(({ config }) => config.envName !== 'local', 'Requires the local stack + mock broker.');
 
-  test('TC-COPY-002-004 mirror close is clamped to the quantity the subscriber holds @trading @api @P0 @data-integrity', async ({ api, config }, info) => {
+  test('TC-COPY-002-004 mirror close is clamped to the quantity the subscriber holds @trading @api @P0 @data-integrity', async ({
+    api,
+    config,
+  }, info) => {
     meta(info, 'COPY-002');
     const mb = new MockBroker(config);
     await mb.resetScenario();
@@ -60,7 +70,15 @@ test.describe('Close / positions (mock broker)', () => {
       await fireClose(api, config, p, entryId, 10);
       // subscriber's close mirror must be clamped to their held 5, on the SELL side
       let closeChild = '';
-      await expect.poll(() => { closeChild = newestOrderIdForUser(config, sub.user_id, SYM, subEntry); return closeChild !== ''; }, { timeout: 20000 }).toBe(true);
+      await expect
+        .poll(
+          () => {
+            closeChild = newestOrderIdForUser(config, sub.user_id, SYM, subEntry);
+            return closeChild !== '';
+          },
+          { timeout: 20000 },
+        )
+        .toBe(true);
       const row = orderRow(config, closeChild);
       expect(row.side).toBe('sell');
       expect(Number(row.quantity), 'close clamped to held 5, not trader 10').toBe(5);
@@ -70,7 +88,10 @@ test.describe('Close / positions (mock broker)', () => {
     }
   });
 
-  test('TC-COPY-002-006 zero held quantity — close is skipped, no reverse/short opened @trading @api @P0 @data-integrity', async ({ api, config }, info) => {
+  test('TC-COPY-002-006 zero held quantity — close is skipped, no reverse/short opened @trading @api @P0 @data-integrity', async ({
+    api,
+    config,
+  }, info) => {
     meta(info, 'COPY-002');
     const mb = new MockBroker(config);
     await mb.resetScenario();
@@ -88,15 +109,22 @@ test.describe('Close / positions (mock broker)', () => {
       expect(orderRow(config, entryId).status).toBe('filled');
 
       await fireClose(api, config, p, entryId, 10);
-      await expect.poll(() => auditCount(config, 'copy.skipped_zero_qty'), { timeout: 20000 }).toBeGreaterThanOrEqual(1);
-      expect(newestOrderIdForUser(config, sub.user_id, SYM, subEntry), 'no reverse order for a flat subscriber').toBe('');
+      await expect
+        .poll(() => auditCount(config, 'copy.skipped_zero_qty'), { timeout: 20000 })
+        .toBeGreaterThanOrEqual(1);
+      expect(newestOrderIdForUser(config, sub.user_id, SYM, subEntry), 'no reverse order for a flat subscriber').toBe(
+        '',
+      );
       expect(await mb.callCount('place', sub.account_id!), 'no broker place for the skipped close').toBe(1); // only the (rejected) entry
     } finally {
       p.cleanup();
     }
   });
 
-  test('TC-COPY-003-007 transient retry of a CLOSE resets is_closing to false — DEFECT CONFIRM @trading @api @P0 @defect', async ({ api, config }, info) => {
+  test('TC-COPY-003-007 transient retry of a CLOSE resets is_closing to false — DEFECT CONFIRM @trading @api @P0 @defect', async ({
+    api,
+    config,
+  }, info) => {
     meta(info, 'COPY-003', ['COPY-002']);
     const mb = new MockBroker(config);
     await mb.resetScenario();
@@ -112,11 +140,22 @@ test.describe('Close / positions (mock broker)', () => {
 
       await fireClose(api, config, p, entryId, 10);
       let closeChild = '';
-      await expect.poll(() => { closeChild = newestOrderIdForUser(config, sub.user_id, SYM, subEntry); return closeChild !== ''; }, { timeout: 20000 }).toBe(true);
+      await expect
+        .poll(
+          () => {
+            closeChild = newestOrderIdForUser(config, sub.user_id, SYM, subEntry);
+            return closeChild !== '';
+          },
+          { timeout: 20000 },
+        )
+        .toBe(true);
       await expect.poll(() => orderRow(config, closeChild).status, { timeout: 20000 }).toBe('retry_pending');
       // Expected (manual): a parked CLOSE keeps is_closing=true. Current app forces it false (copy_engine
       // transient-park has a TODO). Asserting the CURRENT behavior documents the defect (reproduced ×2).
-      expect(orderRow(config, closeChild).is_closing, 'DEFECT: is_closing reset to false on transient close retry').toBe(false);
+      expect(
+        orderRow(config, closeChild).is_closing,
+        'DEFECT: is_closing reset to false on transient close retry',
+      ).toBe(false);
     } finally {
       p.cleanup();
     }
