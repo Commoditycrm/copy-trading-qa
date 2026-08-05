@@ -67,6 +67,21 @@ export default defineConfig({
         video: 'retain-on-failure',
       },
     },
+    // Performance — measurement runs (fanout scaling + UI timings/web-vitals). Isolated so the API/UI
+    // regression counts stay stable. Longer timeouts for load; browser available for UI-timing tests.
+    {
+      name: 'perf',
+      testDir: './perf/tests',
+      timeout: 180_000,
+      use: {
+        ...devices['Desktop Chrome'],
+        baseURL: cfg.frontendUrl,
+        extraHTTPHeaders: {},
+        trace: 'off',
+        screenshot: 'off',
+        video: 'off',
+      },
+    },
     // Smoke (fake/none broker) — shallow critical paths.
     { name: 'smoke', testDir: './smoke/tests', grep: /@smoke/ },
     // Production read-only smoke — ONLY @prod-safe tests may live here.
