@@ -18,6 +18,8 @@ import {
   auditCount,
   newestOrderIdForUser,
   otherParentOrderId,
+  setSubSettingRaw,
+  parkedCloseIsClosing,
 } from '../../../common/tradingSetup.js';
 
 const SYM = 'NVDA';
@@ -121,7 +123,7 @@ test.describe('Close / positions (mock broker)', () => {
     }
   });
 
-  test('TC-COPY-003-007 transient retry of a CLOSE resets is_closing to false — DEFECT CONFIRM @trading @api @P0 @defect', async ({
+  test('TC-COPY-003-007 a transient-parked CLOSE keeps is_closing=true (DEF-COPY-001 fixed) @trading @api @P0 @data-integrity', async ({
     api,
     config,
   }, info) => {
@@ -131,31 +133,19 @@ test.describe('Close / positions (mock broker)', () => {
     const p = await provisionFanout(api, config, [{ retry_open: '1m' }]);
     try {
       const sub = p.subs[0]!;
+      // Give closes a retry interval so a transient CLOSE PARKS (retry_pending) instead of rejecting —
+      // the exact path where the pre-fix code forced is_closing=false.
+      setSubSettingRaw(config, sub.user_id, 'retry_interval_close', "'ONE_M'");
       const entryId = await traderHolds(api, config, mb, p, 10);
       await expect.poll(() => childId(config, entryId, sub.user_id) !== '', { timeout: 20000 }).toBe(true);
       const subEntry = childId(config, entryId, sub.user_id);
       await mb.setOrderStatus(subEntry, 'filled', 10, 100);
-      mb.syncFills(sub.account_id!); // subscriber holds 10 → a genuine close, is_closing should stay true
+      mb.syncFills(sub.account_id!); // subscriber holds 10 → a genuine close
       await mb.setPlaceOrderResult(sub.account_id!, 'transient'); // the CLOSE mirror parks for retry
 
       await fireClose(api, config, p, entryId, 10);
-      let closeChild = '';
-      await expect
-        .poll(
-          () => {
-            closeChild = newestOrderIdForUser(config, sub.user_id, SYM, subEntry);
-            return closeChild !== '';
-          },
-          { timeout: 20000 },
-        )
-        .toBe(true);
-      await expect.poll(() => orderRow(config, closeChild).status, { timeout: 20000 }).toBe('retry_pending');
-      // Expected (manual): a parked CLOSE keeps is_closing=true. Current app forces it false (copy_engine
-      // transient-park has a TODO). Asserting the CURRENT behavior documents the defect (reproduced ×2).
-      expect(
-        orderRow(config, closeChild).is_closing,
-        'DEFECT: is_closing reset to false on transient close retry',
-      ).toBe(false);
+      // DEF-COPY-001 fixed: the parked CLOSE mirror keeps is_closing=true (was reset to false).
+      await expect.poll(() => parkedCloseIsClosing(config, sub.user_id), { timeout: 20000 }).toBe(true);
     } finally {
       p.cleanup();
     }

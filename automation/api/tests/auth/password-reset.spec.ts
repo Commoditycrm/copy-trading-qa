@@ -48,7 +48,7 @@ test.describe('AUTH-004 Password reset', () => {
     expect((await auth.resetPassword(api, token!, 'Qa!Twice123')).status()).toBe(400); // reuse rejected
   });
 
-  test('TC-AUTH-004-004 reset accepts a weaker password than registration — DEFECT CONFIRM @auth @api @P1 @security', async ({
+  test('TC-AUTH-004-004 reset enforces the registration password policy (weak rejected) @auth @api @P1 @security', async ({
     api,
   }, info) => {
     meta(info, 'AUTH-004', ['AUTH-001']);
@@ -60,11 +60,9 @@ test.describe('AUTH-004 Password reset', () => {
     const weak = 'abcdefgh'; // registration REJECTS this (TC-AUTH-001-006 case 3)
     const res = await auth.resetPassword(api, token!, weak);
     await info.attach('reset-weak-status', { body: String(res.status()), contentType: 'text/plain' });
-    expect(res.status()).toBe(200); // documented asymmetry
-    info.annotations.push({
-      type: 'potential_defect',
-      description: 'reset accepts weaker password than registration — baseline §27',
-    });
+    // DEF-AUTH-002 fixed: reset now applies the same strength policy as registration.
+    expect(res.status(), 'weak reset rejected (>=400), matching registration').toBeGreaterThanOrEqual(400);
+    expect(res.status(), 'no longer the documented asymmetry').not.toBe(200);
   });
 
   test('TC-AUTH-004-005 forgot-password for unknown email still 200 (no enumeration) @auth @api @P2 @negative', async ({

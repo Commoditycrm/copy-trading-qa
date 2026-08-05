@@ -274,6 +274,16 @@ export function setSubSettingRaw(cfg: QaConfig, userId: string, col: string, sql
   psql(`UPDATE subscriber_settings SET ${col}=${sqlExpr} WHERE user_id='${userId}'`);
 }
 
+/** is_closing of a subscriber's parked (RETRY_PENDING) SELL close mirror, or null if none exists. */
+export function parkedCloseIsClosing(cfg: QaConfig, userId: string): boolean | null {
+  assertLocal(cfg);
+  const v = psql(
+    `SELECT is_closing FROM orders WHERE user_id='${userId}' AND parent_order_id IS NOT NULL ` +
+      `AND side::text='SELL' AND status::text='RETRY_PENDING' ORDER BY created_at DESC LIMIT 1`,
+  );
+  return v === '' ? null : v === 't';
+}
+
 /** True while the per-trader subscriber cache snapshot is populated (cache:subs:<traderId>). */
 export function subscriberCacheExists(cfg: QaConfig, traderId: string): boolean {
   assertLocal(cfg);

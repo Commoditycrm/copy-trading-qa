@@ -13,7 +13,7 @@ import { marketOrder } from '../../clients/tradesApi.js';
 import * as a from '../../clients/adminApi.js';
 import { provisionFanout } from '../trading/helpers.js';
 import { MockBroker } from '../../../common/mockBrokerClient.js';
-import { promoteToAdmin, promoteToBrokenAdmin, deleteUser, isActive, userRole } from '../../../common/localAdmin.js';
+import { promoteToAdmin, deleteUser, isActive, userRole } from '../../../common/localAdmin.js';
 import { redisGet, auditByActor, notifCount } from '../../../common/tradingSetup.js';
 import { smsAttempted } from '../../../common/smsSink.js';
 
@@ -239,20 +239,20 @@ test.describe('Admin operations', () => {
     }
   });
 
-  test('TC-ADMIN-001-005 DEF-ADMIN-001 — a shipped-label admin (lowercase user_role) 500s every admin route @admin @api @P0 @defect', async ({
+  test('TC-ADMIN-001-005 DEF-ADMIN-001 fixed — a promoted admin resolves and reaches admin routes (200) @admin @api @P0 @security', async ({
     api,
     config,
   }, info) => {
     meta(info, 'ADMIN-001');
-    // As shipped, the add_admin_role migration stores the enum label lowercase 'admin' while the ORM
-    // reads UserRole by name ('ADMIN'). Promoting to the shipped label makes the admin's own user row
-    // un-deserializable → 500 on any admin endpoint (LookupError: 'admin' not among enum values).
+    // DEF-ADMIN-001 fix (migration a3f9d1c7e2b8) restored the user_role 'ADMIN' label, so an admin's own
+    // row is ORM-deserializable and admin routes return 200 (was 500 with the lost-migration lowercase 'admin').
     const u = makeUser('subscriber');
     const acct = await auth.registerAndLogin(api, u);
-    promoteToBrokenAdmin(config, u.email);
+    promoteToAdmin(config, u.email);
     try {
+      expect(userRole(config, u.email), 'role persisted').toBe('admin');
       const res = await a.stats(api, mintAccess(config, acct.id, 'admin'));
-      expect(res.status(), 'shipped lowercase-admin label breaks the ORM read').toBe(500);
+      expect(res.status(), 'admin row deserializes → 200 (DEF-ADMIN-001 fixed)').toBe(200);
     } finally {
       deleteUser(config, u.email);
     }
