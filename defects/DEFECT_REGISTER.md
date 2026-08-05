@@ -30,7 +30,7 @@ admin surface non-functional on a clean deploy (root cause + suggested `RENAME V
 | TD-001 | App `EmailStr` rejects special-use TLDs (`.test`/`.example`/`.invalid`); synthetic `@kopyya.test` emails 422 at registration | Harness now uses `@qa.kopyya.dev` (`QA_EMAIL_DOMAIN`); documented in `docs/TEST_DATA_STRATEGY.md` |
 | TD-002 | Per-IP register throttle (15/hr) bled across tests → 429 | Harness sends a unique `X-Forwarded-For` per user to isolate the throttle |
 | TD-003 | Email-sink matched tokens by `sub` only → sometimes picked the verify token (wrong type) | Matcher now filters by claim `type` (`reset`/`verify`) |
-| TD-004 | `TC-COPY-004-002` (OCO, ~26s heavy mock-broker test) timed out **once** under 8-worker saturation during the a11y-phase regression. Passes **3/3 isolated** + clean full re-run **185/185**. Environmental timing flake, **not** an app defect or a11y regression. | Mitigation if it recurs: pin `--workers` or raise this test's timeout. |
+| TD-004 | `TC-COPY-004-002` (OCO, ~26s heavy mock-broker test) times out **intermittently** under 8-worker saturation (observed in the a11y + perf regressions). Passes **isolated** every time + clean full re-runs **185/185**. Environmental timing flake, **not** an app defect. | Mitigation if it recurs: pin `--workers` or raise this test's timeout. |
 
 ## Known/Potential (other modules — not yet executed)
 
@@ -64,3 +64,14 @@ Scanners: npm audit, Trivy (image + python pkgs, pip-audit substitute), gitleaks
 | SEC-SECRET-001 | **gitleaks: 0 committed secrets** in either repo. All hits are vendored (`node_modules`/`.venv`/site-packages) or **gitignored, untracked** local env (`qa.env`, `backend/.env`) and a gitignored runtime log. | gitleaks | Pass (no committed secrets) |
 | SEC-API-001 | **Schemathesis:** 102/110 operations enforce auth (401/403 unauthenticated); no unauthenticated 5xx. The 119 "failures" are OpenAPI documentation mismatches (undocumented 401/403/422 response codes) — spec-completeness, not security. Deeper authenticated/stateful fuzz not run (gap). | Schemathesis | Pass + doc-gap |
 | SEC-ZAP-001 | **OWASP ZAP baseline** (passive, localhost only): API root has no crawlable surface (JSON API, root 404). Frontend passive scan flags missing security headers (corroborates SA-005). 0 FAIL. | ZAP baseline | See SA-005 |
+
+## Performance findings (PERF phase — 0 confirmed defects; potential bottlenecks / env-bound)
+
+Measured on the single-worker QA stack + mock broker (absolute latency is a QA floor, not prod). All scenarios 0% error. Full data in `docs/EXECUTION_SUMMARY_PERF.md`. App repo READ-ONLY — reported for the app team, not fixed.
+
+| Ref | Finding | State |
+|---|---|---|
+| PERF-B01 | **bcrypt CPU** dominates auth latency (login p99 ~1s under a 40-VU spike; backend CPU ≈15 cores, memory flat 266 MiB). By design (password hashing); scales with `UVICORN_WORKERS`. | Potential bottleneck (not a defect) |
+| PERF-B02 | **Single-worker throughput ceiling** ~42 logins/s — an artifact of the QA stack's `uvicorn --workers 1`; prod runs configurable workers. | Environment limitation |
+| PERF-B03 | **Fanout worst-case** `max_fanout_ms` ~2.2s at ≥75 subs exceeds the app's own 1s `pct_within_1s` SLO for the *slowest* fanout, though **average stays sub-second** to 200 subs and every sub is mirrored (no loss/duplication). Validate under prod worker/broker latency. | Potential (repeatable ×2; QA single-worker + mock-broker bound) |
+| PERF-P01 | **Positives:** fanout complete + no duplicate financial action to 200 subs; SSE 100 concurrent clients 0 failures; reads p95 <90ms; auth 0% error to 40 VU with graceful degradation; no memory growth under load. | Pass |
