@@ -6,14 +6,14 @@ disposable local stack.
 
 ## Workflows
 
-| File | Trigger | What it runs |
-|---|---|---|
-| `pr.yml` | `pull_request` → `main`, `workflow_dispatch` | **QA / Typecheck** (tsc + prettier), **QA / Security Scan** (npm audit + gitleaks), **QA / PR Smoke** (auth + trading-P0 + risk-P0 + broker offline, fake broker), **QA / UI Smoke** (UI + a11y public scans). ~10-15 min, jobs parallel. |
-| `qa-regression.yml` | `workflow_dispatch` (gated env) | Full API + UI E2E + accessibility + Schemathesis (unauth) + ZAP baseline (authorized input only). |
-| `nightly.yml` | `schedule` 04:00 UTC, `workflow_dispatch` | Full API + UI + a11y + security Playwright + Trivy fs/image + gitleaks + npm audit + pip-audit + a limited local-safe perf baseline. No stress/soak. |
-| `performance.yml` | `workflow_dispatch` only | k6 + Playwright perf (load-level / subscriber-count / duration inputs). Refuses production URLs. Sanitized summaries only. |
-| `broker-contract.yml` | `workflow_dispatch` only | `fake` (default, safe) or `paper` (gated `alpaca-paper` environment, `RUN-PAPER` confirm). Never IBKR / live money. |
-| `prod-smoke.yml` | `workflow_dispatch` (gated env) | **BLOCKED** until DevOps provides account + written authorization + secrets. Read-only `@prod-safe` only. |
+| File                  | Trigger                                      | What it runs                                                                                                                                                                                                                              |
+| --------------------- | -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pr.yml`              | `pull_request` → `main`, `workflow_dispatch` | **QA / Typecheck** (tsc + prettier), **QA / Security Scan** (npm audit + gitleaks), **QA / PR Smoke** (auth + trading-P0 + risk-P0 + broker offline, fake broker), **QA / UI Smoke** (UI + a11y public scans). ~10-15 min, jobs parallel. |
+| `qa-regression.yml`   | `workflow_dispatch` (gated env)              | Full API + UI E2E + accessibility + Schemathesis (unauth) + ZAP baseline (authorized input only).                                                                                                                                         |
+| `nightly.yml`         | `schedule` 04:00 UTC, `workflow_dispatch`    | Full API + UI + a11y + security Playwright + Trivy fs/image + gitleaks + npm audit + pip-audit + a limited local-safe perf baseline. No stress/soak.                                                                                      |
+| `performance.yml`     | `workflow_dispatch` only                     | k6 + Playwright perf (load-level / subscriber-count / duration inputs). Refuses production URLs. Sanitized summaries only.                                                                                                                |
+| `broker-contract.yml` | `workflow_dispatch` only                     | `fake` (default, safe) or `paper` (gated `alpaca-paper` environment, `RUN-PAPER` confirm). Never IBKR / live money.                                                                                                                       |
+| `prod-smoke.yml`      | `workflow_dispatch` (gated env)              | **BLOCKED** until DevOps provides account + written authorization + secrets. Read-only `@prod-safe` only.                                                                                                                                 |
 
 ## Safety controls (every workflow)
 
@@ -34,11 +34,11 @@ disposable local stack.
 
 ## Required secrets & owners
 
-| Secret | Scope | Owner | Purpose |
-|---|---|---|---|
-| `APP_REPO_TOKEN` | repo / org | DevOps | **Read-only** token (fine-grained PAT or deploy key) to check out `Commoditycrm/copy-trading-app` as a build context. Read-only; never used to write. |
-| `ALPACA_PAPER_KEY`, `ALPACA_PAPER_SECRET` | `alpaca-paper` environment | DevOps | Alpaca **Paper** creds for `broker-contract.yml` paper mode. No live money. |
-| `PROD_BASE_URL`, `PROD_SMOKE_TOKEN` | `production-smoke` environment | DevOps / Security lead | Read-only prod smoke target + token. **Not yet provisioned** — `prod-smoke.yml` stays blocked until issued. |
+| Secret                                    | Scope                          | Owner                  | Purpose                                                                                                                                               |
+| ----------------------------------------- | ------------------------------ | ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `APP_REPO_TOKEN`                          | repo / org                     | DevOps                 | **Read-only** token (fine-grained PAT or deploy key) to check out `Commoditycrm/copy-trading-app` as a build context. Read-only; never used to write. |
+| `ALPACA_PAPER_KEY`, `ALPACA_PAPER_SECRET` | `alpaca-paper` environment     | DevOps                 | Alpaca **Paper** creds for `broker-contract.yml` paper mode. No live money.                                                                           |
+| `PROD_BASE_URL`, `PROD_SMOKE_TOKEN`       | `production-smoke` environment | DevOps / Security lead | Read-only prod smoke target + token. **Not yet provisioned** — `prod-smoke.yml` stays blocked until issued.                                           |
 
 Environments requiring **reviewer approval**: `qa-regression`, `alpaca-paper`, `production-smoke`.
 
