@@ -1,6 +1,6 @@
 # DEF-COPY-001 — Transient-retry of a CLOSE mirror resets `is_closing` to false
 
-- **Severity:** High · **Priority:** P1 · **Status:** Confirmed (reproduced ×2, both twice-through runs) · **Date:** 2026-07-31
+- **Severity:** High · **Priority:** P1 · **Status:** Fixed — Verified (was Confirmed; reproduced ×2, both twice-through runs) · **Date:** 2026-07-31
 - **Module:** copy-engine · **Functionality ID:** COPY-003 · **Confirming test:** `TC-COPY-003-007`
 - **Environment:** local-qa stack + controllable QA mock broker · **Build:** app repo `qa-branch`
 - **Source:** `backend/app/services/copy_engine.py` transient-park branch (`child.is_closing = False  # TODO: close-detection`) · baseline §27
@@ -42,3 +42,7 @@ Silent — no error surfaced to the subscriber.
 ## Suggested fix (app team — QA does not modify the app)
 Preserve the order's existing `is_closing` on the transient-park path (or recompute close-detection there)
 instead of forcing it to `False`. The confirming test flips to expected-behavior assertions once fixed.
+
+## Resolution — Fixed — Verified (2026-08-06)
+- **Fixed on:** application `origin/main` @ `d8724f5`. **Fix:** a transient-parked CLOSE mirror retains `is_closing=true` instead of resetting it to false.
+- **Verification:** `TC-COPY-003-007` re-pointed to assert the parked CLOSE keeps `is_closing=true` (DB-confirmed), run @trading serially. Re-verified twice on a fresh migrated DB (Alembic-from-zero, fake broker, no QA remediation). See `docs/VERIFICATION_NOTES.md`.

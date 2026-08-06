@@ -1,7 +1,8 @@
 /**
- * A11Y keyboard-navigation, focus-management, and dialog accessibility.
- * The login form must be fully keyboard-operable; the notification menu must open/close by keyboard and
- * return focus to its trigger (focus management + WAI-ARIA menu semantics).
+ * A11Y keyboard-navigation, focus-management, and disclosure accessibility.
+ * The login form must be fully keyboard-operable; the notification panel is a button-triggered DISCLOSURE
+ * (aria-haspopup + aria-expanded, not an ARIA menu) that must open/close by keyboard, carry an accessible
+ * name, and keep focus on its trigger. No product spec requires role="menu" here, so it is not asserted.
  */
 import { test, expect, meta, seedSession } from '../../ui/fixtures/uiTest.js';
 import { makeUser } from '../../common/factory.js';
@@ -40,7 +41,7 @@ test.describe('A11Y keyboard & focus', () => {
     }
   });
 
-  test('A11Y-DIALOG the notification menu opens/closes by keyboard and returns focus @a11y @P1 @focus', async ({
+  test('A11Y-DIALOG the notification disclosure opens/closes by keyboard and keeps focus on its trigger @a11y @P1 @focus', async ({
     page,
     config,
   }, info) => {
@@ -51,14 +52,27 @@ test.describe('A11Y keyboard & focus', () => {
       await page.goto('/dashboard', { waitUntil: 'domcontentloaded' });
       await page.waitForLoadState('networkidle').catch(() => {});
       const bell = page.getByRole('button', { name: /notifications/i });
+      // Accessible name + disclosure semantics (a labelled popup trigger, collapsed to start).
+      await expect(bell, 'the trigger has an accessible name').toHaveAccessibleName(/notifications/i);
+      await expect(bell).toHaveAttribute('aria-haspopup', 'true');
+      await expect(bell).toHaveAttribute('aria-expanded', 'false');
+
       await bell.focus();
-      expect(await bell.evaluate((el) => el === document.activeElement), 'bell is focusable').toBe(true);
+      expect(await bell.evaluate((el) => el === document.activeElement), 'trigger is keyboard-focusable').toBe(true);
+
+      // Enter opens the disclosure: aria-expanded flips and the panel content appears.
       await page.keyboard.press('Enter');
-      const menu = page.getByRole('menu');
-      await expect(menu, 'menu opens via keyboard').toBeVisible();
+      await expect(bell, 'aria-expanded reflects the open panel').toHaveAttribute('aria-expanded', 'true');
+      const panel = page.getByRole('link', { name: /view all notifications/i }); // present only while open
+      await expect(panel, 'the panel opens via keyboard').toBeVisible();
+
+      // Escape closes it and collapses the trigger.
       await page.keyboard.press('Escape');
-      await expect(menu, 'Escape closes the menu').toBeHidden();
-      expect(await bell.evaluate((el) => el === document.activeElement), 'focus returns to the trigger').toBe(true);
+      await expect(bell, 'Escape collapses the disclosure').toHaveAttribute('aria-expanded', 'false');
+      await expect(panel, 'Escape closes the panel').toBeHidden();
+
+      // Focus is on the trigger after close (it never left the button — a valid non-modal disclosure).
+      expect(await bell.evaluate((el) => el === document.activeElement), 'focus stays on the trigger').toBe(true);
     } finally {
       deleteUser(config, s.email);
     }

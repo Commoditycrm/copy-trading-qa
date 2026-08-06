@@ -1,6 +1,6 @@
 # DEF-ADMIN-001 — `user_role` enum label case drift makes every admin endpoint return 500
 
-- **Severity:** High (functional: Critical for the admin surface) · **Priority:** P0 · **Status:** Confirmed (reproduced ×2+, both twice-through runs) · **Date:** 2026-08-04
+- **Severity:** High (functional: Critical for the admin surface) · **Priority:** P0 · **Status:** Fixed — Verified (was Confirmed; reproduced ×2+, both twice-through runs) · **Date:** 2026-08-04
 - **Module:** admin / data-model · **Functionality ID:** ADMIN-001 · **Confirming test:** `TC-ADMIN-001-005`
 - **Environment:** local-qa stack (backend builds its schema via `alembic upgrade head`) · **Build:** app repo `qa-branch`, alembic head `d5c6b7a8e9f0`
 - **Source:** `alembic/versions/f1a2b3c4d5e6_add_admin_role.py` (`ALTER TYPE user_role ADD VALUE IF NOT EXISTS 'admin'`), `app/models/user.py::UserRole` (`str, enum.Enum` — SQLAlchemy persists/reads by member **name**), `app/api/deps.py::require_admin`
@@ -63,3 +63,7 @@ or equivalently ship a fresh migration `ALTER TYPE user_role RENAME VALUE 'admin
 `f9c2e3d8a1b7_fix_enum_case_drift`) and migrate any pre-existing lowercase `admin` rows. Also add a CI guard
 that fails if `__pycache__` contains a migration whose `.py` source is absent (this regression would have been
 caught). The confirming test flips to a `200` expectation once fixed.
+
+## Resolution — Fixed — Verified (2026-08-06)
+- **Fixed on:** application `origin/main` @ `d8724f5`. **Fix:** migration `a3f9d1c7e2b8` renames the enum label `admin` → `ADMIN` (the NAME the ORM reads), so a real admin row deserializes and `/api/admin/*` works on a clean deploy.
+- **Verification:** `TC-WF-22-009` re-pointed (broken lowercase control removed): a fresh migrated enum = `TRADER,SUBSCRIBER,ADMIN` and `/api/admin/stats` returns 200 with the dashboard rendering; `TC-ADMIN-001-005` corroborates at the API layer. Re-verified twice on a fresh migrated DB (Alembic-from-zero, fake broker, no QA remediation). See `docs/VERIFICATION_NOTES.md`.

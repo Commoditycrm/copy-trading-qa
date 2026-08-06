@@ -1,23 +1,24 @@
 /**
  * WF-22 — Admin operations through the real admin UI (Chromium).
  *
- * DEF-ADMIN-001 handling: the shipped DB stores the user_role label lowercase 'admin' which the ORM can't
- * read, so every admin route 500s. These admin UI tests run AFTER the documented QA-only disposable-DB
- * remediation (promoteToAdmin → ensureAdminEnumLabel adds the correct 'ADMIN' label). The app repo is NOT
- * modified. TC-WF-22-009 is the control proving a broken-label admin still 500s (unremediated behavior).
+ * DEF-ADMIN-001 (FIXED — Verified): migration `a3f9d1c7e2b8` renames the user_role label 'admin' → 'ADMIN'
+ * (the NAME the ORM reads), so a real admin row deserializes and every /api/admin/* route works on a clean
+ * migrated deploy — no QA-only remediation required (promoteToAdmin's ensureAdminEnumLabel is now an
+ * idempotent no-op). TC-WF-22-009 asserts the fixed state: the migrated enum exposes ADMIN and admin
+ * endpoints return 200.
  */
 import { test, expect, meta, seedSession } from '../fixtures/uiTest.js';
 import { LoginPage } from '../pages/auth.js';
 import { AdminPage } from '../pages/admin.js';
 import { makeUser } from '../../common/factory.js';
-import { deleteUser, promoteToAdmin, promoteToBrokenAdmin, isActive } from '../../common/localAdmin.js';
+import { deleteUser, promoteToAdmin, isActive, userRoleEnumLabels } from '../../common/localAdmin.js';
 import { mintAccess } from '../../common/jwt.js';
 import * as authApi from '../../api/clients/authApi.js';
 import * as trades from '../../api/clients/tradesApi.js';
 import { marketOrder } from '../../api/clients/tradesApi.js';
 import { provisionFanout } from '../../api/tests/trading/helpers.js';
 import { MockBroker } from '../../common/mockBrokerClient.js';
-import { notifCount } from '../../common/tradingSetup.js';
+import { childForUser } from '../../common/tradingSetup.js';
 
 async function seedAdmin(api: any, config: any, page: any): Promise<{ email: string; id: string }> {
   const u = makeUser('subscriber');
@@ -96,41 +97,52 @@ test.describe('WF-22 Admin operations (UI, post-remediation)', () => {
     const p = await provisionFanout(api, config, [{}]);
     const ap = new AdminPage(page);
     try {
-      await mb.setPlaceOrderResult(p.subs[0]!.account_id!, 'reject', { reason: 'asset not tradable' });
-      await trades.placeOrder(api, p.traderAccess, p.brokerAccountId, marketOrder('AAPL', 5));
+      const sub = p.subs[0]!;
+      await mb.setPlaceOrderResult(sub.account_id!, 'reject', { reason: 'asset not tradable' });
+      const res = await trades.placeOrder(api, p.traderAccess, p.brokerAccountId, marketOrder('AAPL', 5));
+      const entryId = (await res.json()).id as string;
+      // Ground truth: wait until the subscriber's mirror child is COMMITTED as rejected — the exact row the
+      // admin rejected-orders query returns. The old copy.rejected-notification wait could win the race
+      // before the order-status commit, so the screen's one-shot mount fetch sometimes loaded an empty set.
       await expect
-        .poll(() => notifCount(config, p.subs[0]!.user_id, 'copy.rejected'), { timeout: 20000 })
-        .toBeGreaterThanOrEqual(1);
+        .poll(() => childForUser(config, entryId, sub.user_id)?.status ?? 'none', { timeout: 20000 })
+        .toBe('rejected');
 
-      await ap.openRejected();
+      await ap.openRejected(); // mounts AFTER the row is committed → the initial fetch includes it
       await expect(ap.rejectedHeading).toBeVisible();
-      await expect(page.getByText('AAPL').first()).toBeVisible();
+      // The rejected row for THIS subscriber (scoped by their unique email → parallel-safe), on AAPL.
+      const row = ap.rejectedRowFor(sub.email).first();
+      await expect(row).toBeVisible();
+      await expect(row).toContainText('AAPL');
     } finally {
       deleteUser(config, admin.email);
       p.cleanup();
     }
   });
 
-  test('TC-WF-22-009 CONTROL — an unremediated (lowercase-label) admin cannot load /admin (500) @ui @P0 @defect', async ({
+  test('TC-WF-22-009 DEF-ADMIN-001 — fresh migrated DB exposes ADMIN and admin endpoints return 200 @ui @P0 @regression', async ({
     page,
     config,
     api,
   }, info) => {
     meta(info, 'WF-22', ['ADMIN-001']);
-    // DEF-ADMIN-001: without the QA enum remediation the admin's own row is un-deserializable → /api/auth/me 500s.
-    const u = makeUser('subscriber');
-    const acct = await authApi.registerAndLogin(api, u);
-    promoteToBrokenAdmin(config, u.email); // shipped lowercase 'admin' label — no remediation
+    // DEF-ADMIN-001 fixed: migration a3f9d1c7e2b8 renames the user_role label 'admin' → 'ADMIN' (the NAME
+    // the ORM reads), so a real admin row deserializes and /api/admin/* works on a clean deploy — no
+    // QA-only remediation needed. Assert the migrated enum, an admin API 200, and the dashboard rendering.
+    const labels = userRoleEnumLabels(config);
+    expect(labels, 'migrated user_role enum contains ADMIN').toContain('ADMIN');
+    expect(labels, 'the pre-fix lowercase label is gone').not.toContain('admin');
+
+    const admin = await seedAdmin(api, config, page); // promotes to the real 'ADMIN' label + seeds the session
     try {
-      // proof at the API layer that the shipped state 500s.
-      const me = await api.get('/api/auth/me', { token: mintAccess(config, acct.id, 'admin') });
-      expect(me.status()).toBe(500);
-      // and in the browser the admin dashboard never renders.
-      await seedSession(page, { access: mintAccess(config, acct.id, 'admin'), refresh: acct.refresh });
+      // admin API returns 200 (was the pre-fix 500 on an un-deserializable admin row) …
+      const res = await api.get('/api/admin/stats', { token: mintAccess(config, admin.id, 'admin') });
+      expect(res.status(), 'admin endpoint returns 200 on a fresh migrated DB').toBe(200);
+      // … and the admin dashboard renders in the browser.
       await page.goto('/admin', { waitUntil: 'domcontentloaded' });
-      await expect(new AdminPage(page).overviewHeading).toHaveCount(0);
+      await expect(new AdminPage(page).overviewHeading).toBeVisible();
     } finally {
-      deleteUser(config, u.email);
+      deleteUser(config, admin.email);
     }
   });
 });

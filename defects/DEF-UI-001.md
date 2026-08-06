@@ -1,6 +1,6 @@
 # DEF-UI-001 — /brokers white-screens (client-side exception) for a broker name not in `BROKER_META`
 
-- **Severity:** Medium (latent in prod; hard-blocks graceful handling of any unmapped broker) · **Priority:** P2 · **Status:** Confirmed (reproduced deterministically ×2+) · **Date:** 2026-08-04
+- **Severity:** Medium (latent in prod; hard-blocks graceful handling of any unmapped broker) · **Priority:** P2 · **Status:** Fixed — Verified (was Confirmed; reproduced deterministically ×2+) · **Date:** 2026-08-04
 - **Module:** frontend / brokers · **Functionality ID:** WF-06 (BRK-001) · **Confirming test:** `TC-WF-06-002`
 - **Environment:** local-qa full stack (Next.js frontend + QA backend) · **Build:** app repo `qa-branch`
 - **Source:** `frontend/app/(app)/brokers/page.tsx` — `BrokerAvatar` (`:41` `const meta = BROKER_META[broker];` → `:56` `{meta.name[0]}`)
@@ -46,3 +46,7 @@ Reproduced 2×+: the initial broker page-render and disconnect attempts both whi
 Give `BrokerAvatar` the same fallback the rest of the file uses, e.g. `const meta = BROKER_META[broker] ??
 { name: broker, … }` (or guard `meta?.name?.[0] ?? '?'`). The confirming test flips to expected-behavior
 (page renders, account row shown) once fixed.
+
+## Resolution — Fixed — Verified (2026-08-06)
+- **Fixed on:** application `origin/main` @ `d8724f5`. **Fix:** `brokerMeta()` returns a neutral fallback for a broker not in `BROKER_META`, so `BrokerAvatar` no longer dereferences `undefined`.
+- **Verification:** `TC-WF-06-002` re-pointed: `/brokers` mounts, the fake account is listed via the "Fake" fallback, and no uncaught client-side exception fires. Re-verified twice on a fresh migrated DB (Alembic-from-zero, fake broker, no QA remediation). See `docs/VERIFICATION_NOTES.md`.

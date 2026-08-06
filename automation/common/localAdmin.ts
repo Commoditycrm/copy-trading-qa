@@ -55,11 +55,10 @@ export function isActive(cfg: QaConfig, email: string): boolean {
 
 let adminLabelEnsured = false;
 /**
- * QA-DB remediation for DEF-ADMIN-001: the `add_admin_role` migration added the user_role label as
- * lowercase 'admin', but the ORM persists/reads UserRole by NAME ('ADMIN'). No app migration fixes it,
- * so every /api/admin/* route 500s on a real admin row. We ADD the correct 'ADMIN' label (idempotent)
- * so admin coverage is possible; the buggy lowercase 'admin' label is left in place so the defect stays
- * reproducible (see promoteToBrokenAdmin). The app's proper fix is `RENAME VALUE 'admin' TO 'ADMIN'`.
+ * DEF-ADMIN-001 is now fixed at the app level: migration `a3f9d1c7e2b8` renames the user_role label
+ * 'admin' → 'ADMIN', which is the NAME the ORM persists/reads, so a real admin row deserializes and every
+ * /api/admin/* route works on a clean deploy. This ADD VALUE is therefore an idempotent no-op on a migrated
+ * schema (the label already exists) — kept only so admin promotion is safe against any pre-fix DB.
  */
 export function ensureAdminEnumLabel(cfg: QaConfig): void {
   assertLocal(cfg);
@@ -76,16 +75,16 @@ export function promoteToAdmin(cfg: QaConfig, email: string): void {
   psql(`UPDATE users SET role='ADMIN' WHERE email='${email}'`);
 }
 
-/** Promote to the DEFECTIVE lowercase 'admin' label as shipped — reproduces DEF-ADMIN-001. LOCAL-ONLY. */
-export function promoteToBrokenAdmin(cfg: QaConfig, email: string): void {
-  assertLocal(cfg);
-  assertSynthetic(email);
-  psql(`UPDATE users SET role='admin' WHERE email='${email}'`);
-}
-
 /** Read a user's role label verbatim (case-sensitive) for assertions. */
 export function userRole(cfg: QaConfig, email: string): string {
   assertLocal(cfg);
   assertSynthetic(email);
   return psql(`SELECT lower(role::text) FROM users WHERE email='${email}'`);
+}
+
+/** Read the user_role enum's labels (case-sensitive) straight from the migrated DB — for DEF-ADMIN-001. */
+export function userRoleEnumLabels(cfg: QaConfig): string[] {
+  assertLocal(cfg);
+  const out = psql("SELECT array_to_string(enum_range(NULL::user_role), ',')");
+  return out === '' ? [] : out.split(',');
 }

@@ -6,22 +6,28 @@ causes ruled out, (3) expected behavior verified, (4) redacted evidence captured
 
 ## Confirmed defects
 
-| Defect ID | Sev | Title | Confirming test | Reproduced | File |
-|---|---|---|---|---|---|
-| **DEF-AUTH-001** | High | `auth/refresh` returns 500 (expected 401) on malformed `sub` | TC-AUTH-003-002 | ×3 | [DEF-AUTH-001.md](DEF-AUTH-001.md) |
-| **DEF-AUTH-002** | High | Password reset accepts a weaker password than registration | TC-AUTH-004-004 | ×2 + control | [DEF-AUTH-002.md](DEF-AUTH-002.md) |
-| **DEF-AUTH-003** | Medium | Mixed-case forgot-password silently no-match (no reset link) | TC-AUTH-004-006 | ×2 + control | [DEF-AUTH-003.md](DEF-AUTH-003.md) |
-| **DEF-COPY-001** | High | Transient-retry of a CLOSE mirror resets `is_closing` to false | TC-COPY-003-007 | ×2 | [DEF-COPY-001.md](DEF-COPY-001.md) |
-| **DEF-ADMIN-001** | High | `user_role` enum label case drift (regression — fix migration `c4f1a9d3e7b2` missing from `qa-branch`) — every `/api/admin/*` returns 500 for a real admin | TC-ADMIN-001-005 | ×2+ | [DEF-ADMIN-001.md](DEF-ADMIN-001.md) |
-| **DEF-UI-001** | Medium | `/brokers` white-screens (client-side exception) when a user holds a broker name not in the frontend `BROKER_META` (e.g. `fake`) — `BrokerAvatar` derefs `meta.name` with no fallback | TC-WF-06-002 | ×2+ | [DEF-UI-001.md](DEF-UI-001.md) |
-| **DEF-SEC-001** | Medium | SSE auth JWT carried in the URL query (`/api/events?token=`) is recorded in cleartext in the uvicorn access log — replayable-token-in-logs (runtime confirmation of §24) | SA-007 | ×2 | [DEF-SEC-001.md](DEF-SEC-001.md) |
-| **DEF-A11Y-001** | High | Form controls without programmatic labels / accessible names (axe `label`/`select-name`, critical) — /register, /settings (+3 selects), /trade-panel, /admin | A11Y-SCAN | ×2 | [DEF-A11Y-001.md](DEF-A11Y-001.md) |
-| **DEF-A11Y-002** | Medium | Insufficient colour contrast (axe `color-contrast`, serious, WCAG 1.4.3 AA) — /terms, /privacy, /brokers, /settings, /trade-panel, /admin | A11Y-SCAN | ×2 | [DEF-A11Y-002.md](DEF-A11Y-002.md) |
-| **DEF-A11Y-003** | Medium | Link-in-text (colour-only), prohibited ARIA attr, non-focusable scroll region (axe serious) — /terms, /privacy, /calendar, /performance | A11Y-SCAN | ×2 | [DEF-A11Y-003.md](DEF-A11Y-003.md) |
+All 10 are **Fixed — Verified** on application `origin/main` @ `d8724f5` (merged-main verification, fresh DB +
+Alembic-from-zero + fake broker, run twice). Each confirming test was re-pointed from asserting the defect to
+asserting the fixed behavior. See `docs/VERIFICATION_NOTES.md` for the full evidence.
 
-All are behavior defects (no fix applied — app repo is read-only; QA reports, app team fixes). DEF-AUTH-*/COPY-001
-confirm baseline §27 items; **DEF-ADMIN-001** is a migration/ORM enum-case mismatch that renders the entire
-admin surface non-functional on a clean deploy (root cause + suggested `RENAME VALUE` fix in the file).
+| Defect ID | Sev | Title | Confirming test | Status | File |
+|---|---|---|---|---|---|
+| **DEF-AUTH-001** | High | `auth/refresh` returns 500 (expected 401) on malformed `sub` | TC-AUTH-003-002 | **Fixed — Verified** | [DEF-AUTH-001.md](DEF-AUTH-001.md) |
+| **DEF-AUTH-002** | High | Password reset accepts a weaker password than registration | TC-AUTH-004-004 | **Fixed — Verified** | [DEF-AUTH-002.md](DEF-AUTH-002.md) |
+| **DEF-AUTH-003** | Medium | Mixed-case forgot-password silently no-match (no reset link) | TC-AUTH-004-006 | **Fixed — Verified** | [DEF-AUTH-003.md](DEF-AUTH-003.md) |
+| **DEF-COPY-001** | High | Transient-retry of a CLOSE mirror resets `is_closing` to false | TC-COPY-003-007 | **Fixed — Verified** | [DEF-COPY-001.md](DEF-COPY-001.md) |
+| **DEF-ADMIN-001** | High | `user_role` enum label case drift — every `/api/admin/*` returned 500 for a real admin | TC-WF-22-009 / TC-ADMIN-001-005 | **Fixed — Verified** | [DEF-ADMIN-001.md](DEF-ADMIN-001.md) |
+| **DEF-UI-001** | Medium | `/brokers` white-screens (client-side exception) when a user holds a broker name not in the frontend `BROKER_META` (e.g. `fake`) | TC-WF-06-002 | **Fixed — Verified** | [DEF-UI-001.md](DEF-UI-001.md) |
+| **DEF-SEC-001** | Medium | SSE auth JWT carried in the URL query (`/api/events?token=`) recorded in cleartext in the uvicorn access log | SA-007 | **Fixed — Verified** | [DEF-SEC-001.md](DEF-SEC-001.md) |
+| **DEF-A11Y-001** | High | Form controls without programmatic labels / accessible names (axe `label`/`select-name`, critical) | A11Y-SCAN | **Fixed — Verified** | [DEF-A11Y-001.md](DEF-A11Y-001.md) |
+| **DEF-A11Y-002** | Medium | Insufficient colour contrast (axe `color-contrast`, serious, WCAG 1.4.3 AA) | A11Y-SCAN | **Fixed — Verified** | [DEF-A11Y-002.md](DEF-A11Y-002.md) |
+| **DEF-A11Y-003** | Medium | Link-in-text (colour-only), prohibited ARIA attr, non-focusable scroll region (axe serious) | A11Y-SCAN | **Fixed — Verified** | [DEF-A11Y-003.md](DEF-A11Y-003.md) |
+
+Fixes landed on app `main`: AUTH-001 (uuid guard), AUTH-002/003 (reset password policy + case-insensitive
+lookup), COPY-001 (retain `is_closing` on a parked CLOSE), ADMIN-001 (migration `a3f9d1c7e2b8`
+`RENAME VALUE 'admin' → 'ADMIN'`), UI-001 (`brokerMeta()` neutral fallback), SEC-001 (`_RedactAccessTokenFilter`
+scrubs `token=` from the access log), A11Y-001/002/003 (commit `2c94e39`). QA is authoritative only for the
+tests; the app team owns the code — these were verified against their merged `main`, not modified by QA.
 
 ## Test-data / environment findings (harness — NOT app defects)
 
@@ -56,8 +62,8 @@ Scanners: npm audit, Trivy (image + python pkgs, pip-audit substitute), gitleaks
 
 | Ref | Finding | Tool | State |
 |---|---|---|---|
-| SEC-DEP-001 | **Backend Python deps carry known CVEs.** `python-jose 3.3.0` (CRITICAL CVE-2024-33663, JWT algorithm-confusion — auth-relevant), `python-multipart 0.0.12` (multiple HIGH DoS), `starlette 0.38.6` (HIGH), `cryptography 43.0.3` (HIGH — used for Fernet credential encryption), plus pillow/ecdsa/pyasn1/aiohttp/wheel. | Trivy image (python pkgs) | Potential (upgrade deps; jose→3.4.0, multipart→0.0.30+, starlette→0.40+, cryptography→46+) |
-| SEC-DEP-002 | **Frontend npm deps:** 2 high + 1 critical — `postcss` (transitive via next: XSS/path-traversal in source-map handling) and `sharp <0.35.0` (libvips CVEs). Fix requires `next@15.5.22`. | npm audit | Potential |
+| SEC-DEP-001 | **Backend Python deps carry known CVEs.** Original: `python-jose 3.3.0` (CRITICAL CVE-2024-33663, JWT algorithm-confusion — auth-relevant), `python-multipart 0.0.12`, `starlette 0.38.6`, `cryptography 43.0.3`. | Trivy image / pip-audit | **Partially remediated — Verified.** On `d8724f5` `python-jose==3.4.0` and `cryptography==44.0.1`; the **CRITICAL python-jose finding is cleared** (0 CRITICAL in pip-audit + Trivy). Newer 2026-dated HIGH advisories remain on cryptography/starlette/python-multipart/pyasn1/ecdsa (no CRITICAL) — open backlog SEC-DEP-005. |
+| SEC-DEP-002 | **Frontend npm deps:** originally 2 high + 1 critical — `postcss` (transitive via next) and `sharp <0.35.0` (libvips). | npm audit | **Critical remediated — Verified.** On `d8724f5` `next@^15.5.22`; npm audit = **0 critical**, 2 high remain (`sharp`/libvips via next — needs `next@16`, breaking; deferred as SEC-DEP-006). |
 | SEC-DEP-003 | **Base-image OS CVEs.** backend image 119 HIGH + 19 CRITICAL (Debian: libperl5.40, util-linux, gzip…); frontend 41 HIGH + 3 CRITICAL (node:20-alpine). Base-image hygiene — rebase to patched bases + periodic rebuilds. | Trivy image (OS) | Potential |
 | SEC-DEP-004 | **QA automation deps:** 2 moderate (`exceljs`→`uuid`). QA tooling only. | npm audit | Observation |
 | SEC-CFG-001 | **Container hardening:** non-root confirmed (backend/worker=`appuser`, frontend=`node`); Postgres/Redis internal-only (no host ports); Redis `requirepass`. Prod compose enforces `read_only:true` + `cap_drop:ALL` + `no-new-privileges` (via anchor); the QA harness omits these for test convenience. | docker inspect / compose | Pass (prod hardened) |

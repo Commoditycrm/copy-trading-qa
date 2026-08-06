@@ -1,6 +1,6 @@
 # DEF-SEC-001 — SSE auth JWT is exposed in the URL query string and logged in cleartext
 
-- **Severity:** Medium · **Priority:** P2 · **Status:** Confirmed (reproduced ×2, both security-suite runs) · **Date:** 2026-08-04
+- **Severity:** Medium · **Priority:** P2 · **Status:** Fixed — Verified (was Confirmed; reproduced ×2, both security-suite runs) · **Date:** 2026-08-04
 - **Module:** notifications / auth · **Functionality ID:** NOTIF-001 (baseline §24) · **Confirming test:** `SA-007`
 - **Environment:** local-qa disposable stack · **Build:** app repo `qa-branch`
 - **Source:** `GET /api/events?token=<JWT>` (SSE stream; EventSource cannot set an `Authorization` header, so the access token is passed as a query parameter), served by uvicorn whose access log records the full request line.
@@ -43,3 +43,7 @@ Stop carrying the token in the query string: issue a short-lived single-use SSE 
 authenticate the stream via cookie, or use a fetch-based `EventSource` polyfill that sends an `Authorization`
 header. At minimum, scrub `token=` from access-log query strings and shorten SSE-token lifetime. The
 confirming test flips to asserting the token is **absent** from logs once fixed.
+
+## Resolution — Fixed — Verified (2026-08-06)
+- **Fixed on:** application `origin/main` @ `d8724f5`. **Fix:** `_RedactAccessTokenFilter` (main.py) scrubs `token=<jwt>` → `token=REDACTED` from the uvicorn access log before it is written.
+- **Verification:** `SA-007` re-pointed: the real SSE JWT never appears in the access log and the request line shows `token=REDACTED` (direct reproduction confirmed). Re-verified twice on a fresh migrated DB (Alembic-from-zero, fake broker, no QA remediation). See `docs/VERIFICATION_NOTES.md`.

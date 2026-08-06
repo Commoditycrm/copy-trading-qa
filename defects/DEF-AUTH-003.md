@@ -1,6 +1,6 @@
 # DEF-AUTH-003 — Mixed/upper-case forgot-password silently fails to match (no reset link)
 
-- **Severity:** Medium · **Priority:** P2 · **Status:** Confirmed (reproduced ×2 + control) · **Date:** 2026-07-31
+- **Severity:** Medium · **Priority:** P2 · **Status:** Fixed — Verified (was Confirmed; reproduced ×2 + control) · **Date:** 2026-07-31
 - **Module:** auth · **Functionality ID:** AUTH-004 · **Confirming test:** `TC-AUTH-004-006`
 - **Environment:** local-qa stack · **Build:** app repo `qa-branch` (API v0.2.0)
 - **Source:** `backend/app/schemas/auth.py::ForgotPasswordIn` (no `_normalize_email`, unlike `LoginIn`/`RegisterIn`) · baseline §27
@@ -31,3 +31,7 @@ Reproduced 2/2; control (lowercase) confirms the account and sink work.
 ## Impact
 Usability + account-recovery reliability; the anti-enumeration 200 hides the failure so users can't tell
 why no email arrived. **Fix:** normalize the email on `ForgotPasswordIn` (and `ResendVerificationIn`).
+
+## Resolution — Fixed — Verified (2026-08-06)
+- **Fixed on:** application `origin/main` @ `d8724f5`. **Fix:** forgot-password lookup is case-insensitive, so a mixed-case email still issues a reset link.
+- **Verification:** `TC-AUTH-004-006` asserts a reset token IS produced for a mixed-case request. Re-verified twice on a fresh migrated DB (Alembic-from-zero, fake broker, no QA remediation). See `docs/VERIFICATION_NOTES.md`.
