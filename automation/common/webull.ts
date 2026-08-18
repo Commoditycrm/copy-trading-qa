@@ -58,6 +58,19 @@ export function brokerEnumLabels(cfg: QaConfig): string[] {
   return out === '' ? [] : out.split(',');
 }
 
+/** The newest `webull` broker_account row for a user (null if none). `enc` is the Fernet ciphertext at rest. */
+export function webullAccountRow(cfg: QaConfig, userId: string): { id: string; status: string; enc: string } | null {
+  assertLocal(cfg);
+  const out = db(
+    `SELECT id||'|'||coalesce(connection_status,'')||'|'||coalesce(encrypted_credentials,'') ` +
+      `FROM broker_accounts WHERE user_id='${userId}' AND broker::text='webull' ORDER BY created_at DESC LIMIT 1`,
+  );
+  if (!out) return null;
+  const i1 = out.indexOf('|');
+  const i2 = out.indexOf('|', i1 + 1);
+  return { id: out.slice(0, i1), status: out.slice(i1 + 1, i2), enc: out.slice(i2 + 1) };
+}
+
 /** pip metadata for a distribution (empty string if not installed). */
 export function pipShow(cfg: QaConfig, dist: string): string {
   assertLocal(cfg);
@@ -83,4 +96,15 @@ export function webullFlags(cfg: QaConfig): { enabled: boolean; shadow: boolean 
   );
   const [enabled, shadow] = out.split('|');
   return { enabled: enabled === 'True', shadow: shadow === 'True' };
+}
+
+/** Safe check: is direct-Webull ENABLED on the running backend? False if the stack is down or off — so the
+ *  webull-connect tests skip on the default (webull-off) stack and only run under docker-compose.webull.yml. */
+export function webullEnabled(cfg: QaConfig): boolean {
+  assertLocal(cfg);
+  try {
+    return webullFlags(cfg).enabled;
+  } catch {
+    return false;
+  }
 }

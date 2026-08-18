@@ -1,0 +1,27 @@
+# QA override — brings the disposable stack up with direct-Webull ENABLED against a MOCK adapter
+# (no real webull SDK, no credentials, no network). Apply ON TOP of docker-compose.qa.yml, and ONLY for the
+# webull-connect test pass:
+#
+#   docker compose -f local-stack/docker-compose.qa.yml -f local-stack/docker-compose.webull.yml --profile full up -d
+#   (or: npm run local:webull:enable   — after a normal `npm run local:up:full`)
+#
+# The DEFAULT stack keeps Webull OFF, so the security-default guards (SA-WEBULL-003) and the REAL lazy-import
+# guard (SA-WEBULL-002, which must import the real app/brokers/webull.py) stay meaningful. Only this override
+# swaps in the mock. The worker is kept inert here so no background listener/poller ever reaches real Webull.
+services:
+  backend:
+    environment:
+      WEBULL_DIRECT_ENABLED: 'true'
+      WEBULL_DIRECT_SHADOW_MODE: 'true'
+      WEBULL_DIRECT_POLL_ENABLED: 'false'
+    volumes:
+      - ../mock-broker/qa_webull_broker.py:/app/app/brokers/webull.py:ro
+
+  worker:
+    environment:
+      WEBULL_DIRECT_ENABLED: 'true'
+      WEBULL_DIRECT_SHADOW_MODE: 'true'
+      WEBULL_DIRECT_POLL_ENABLED: 'false'
+      RUN_BACKGROUND_WORKERS: 'false' # keep the worker inert during webull-connect tests → no listener touches Webull
+    volumes:
+      - ../mock-broker/qa_webull_broker.py:/app/app/brokers/webull.py:ro

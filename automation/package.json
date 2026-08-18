@@ -17,6 +17,7 @@
     "local:health": "node local-stack/health.mjs",
     "local:reset": "docker compose -f local-stack/docker-compose.qa.yml --profile full down -v && node local-stack/up.mjs",
     "local:down": "docker compose -f local-stack/docker-compose.qa.yml --profile full down -v",
+    "local:webull:enable": "docker compose -f local-stack/docker-compose.qa.yml -f local-stack/docker-compose.webull.yml --profile full up -d",
     "test": "playwright test",
     "test:api": "playwright test --project=api",
     "test:ui": "playwright test --project=ui",
