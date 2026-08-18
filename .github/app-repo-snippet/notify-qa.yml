@@ -1,0 +1,50 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# ADD THIS FILE TO THE APPLICATION REPO (Commoditycrm/copy-trading-app):
+#   path in the app repo:  .github/workflows/notify-qa.yml
+#
+# It is a TEMPLATE kept here in the QA repo — it does NOT run from this location
+# (only files under .github/workflows/ execute, and this lives under app-repo-snippet/).
+#
+# What it does: on every push to app `main`, it tells the QA repo to run its regression
+# (workflow "QA / On App Push") against the exact commit that was just pushed.
+#
+# Setup (one-time, by the app team / DevOps):
+#   1. Create a token that may send a repository_dispatch to the QA repo:
+#        • Fine-grained PAT scoped to Commoditycrm/copy-trading-qa with
+#          Repository permissions → "Contents: Read and write"  (dispatch needs contents:write), OR
+#        • a classic PAT with the `repo` scope, OR a GitHub App installation token.
+#   2. Save it as an ACTION SECRET in the APPLICATION repo named:  QA_DISPATCH_TOKEN
+#   3. Ensure the QA repo has APP_REPO_TOKEN (read access to this app repo) so it can check out
+#      the pushed commit — see the QA repo's .github/workflows/README.md.
+# ─────────────────────────────────────────────────────────────────────────────
+name: Notify QA on push to main
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: notify-qa-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  notify-qa:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dispatch "QA / On App Push" for this commit
+        env:
+          QA_TOKEN: ${{ secrets.QA_DISPATCH_TOKEN }}
+        run: |
+          if [ -z "${QA_TOKEN}" ]; then
+            echo "::error::QA_DISPATCH_TOKEN is not set in this repo — cannot notify QA."
+            exit 1
+          fi
+          curl -sS --fail -X POST \
+            -H "Authorization: Bearer ${QA_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/Commoditycrm/copy-trading-qa/dispatches" \
+            -d "{\"event_type\":\"app-main-push\",\"client_payload\":{\"sha\":\"${GITHUB_SHA}\",\"ref\":\"${GITHUB_REF_NAME}\",\"actor\":\"${GITHUB_ACTOR}\"}}"
+          echo "Dispatched app-main-push for ${GITHUB_SHA} → QA / On App Push"

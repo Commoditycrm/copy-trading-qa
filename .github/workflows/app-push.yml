@@ -1,0 +1,125 @@
+# QA / On App Push — runs the QA regression automatically when the APPLICATION team pushes to app `main`.
+#
+# Trigger: a `repository_dispatch` (type: app-main-push) sent BY the application repo on every push to main.
+# The application team adds a small notifier to their repo — see `.github/app-repo-snippet/notify-qa.yml`.
+# Also manually runnable (`workflow_dispatch`) with a SHA for testing.
+#
+# The application repo is checked out READ-ONLY at the exact pushed commit and never modified. Runs on a
+# disposable local stack with the fake broker only — never production, never a paper/live broker.
+#
+# Secrets required (see .github/workflows/README.md):
+#   • APP_REPO_TOKEN (this repo) — read the app repo to check it out; optional statuses:write to report back.
+#   • QA_DISPATCH_TOKEN (the APP repo) — lets the app repo send the dispatch here.
+name: QA / On App Push
+
+on:
+  repository_dispatch:
+    types: [app-main-push]
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: 'Application commit SHA (or ref) to test'
+        required: false
+        default: 'main'
+
+permissions:
+  contents: read
+
+concurrency:
+  # A newer push supersedes an in-flight run so we always finish on the latest app commit.
+  group: qa-app-push
+  cancel-in-progress: true
+
+jobs:
+  regression:
+    name: QA / On App Push
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      QA_ENV: local
+      BROKER_MODE: fake
+      APP_SHA: ${{ github.event.client_payload.sha || github.event.inputs.sha || 'main' }}
+      APP_REF: ${{ github.event.client_payload.ref || '' }}
+      APP_ACTOR: ${{ github.event.client_payload.actor || github.actor }}
+    steps:
+      - name: Show trigger
+        run: echo "QA regression for app commit ${APP_SHA} (ref=${APP_REF:-n/a}, pushed by ${APP_ACTOR})"
+      - name: Checkout QA repo
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          path: copy-trading-qa
+      - name: Checkout application repo at the pushed SHA (READ-ONLY, build context only)
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          repository: Commoditycrm/copy-trading-app
+          ref: ${{ env.APP_SHA }}
+          token: ${{ secrets.APP_REPO_TOKEN }}
+          path: copy-trading-app
+          persist-credentials: false
+      - uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: copy-trading-qa/automation/package-lock.json
+      - name: Cache Playwright browsers
+        uses: actions/cache@1bd1e32a3bdc45362d1e726936510720a7c30a57 # v4.2.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('copy-trading-qa/automation/package-lock.json') }}
+      - name: Install (locked)
+        working-directory: copy-trading-qa/automation
+        run: npm ci
+      - name: Install Chromium
+        working-directory: copy-trading-qa/automation
+        run: npx playwright install --with-deps chromium
+      - name: Bring up full stack (fake broker)
+        working-directory: copy-trading-qa/automation
+        run: npm run local:up:full
+      - name: Wait for health
+        working-directory: copy-trading-qa/automation
+        run: npm run local:health
+      # TD-004: the heavy mock-broker trading tests time out under CPU contention at ≥4 workers — run the
+      # @trading group SERIALLY (workers=1). Everything else runs parallel.
+      - name: API regression — non-trading (parallel)
+        working-directory: copy-trading-qa/automation
+        run: npx playwright test --project=api --grep-invert @trading --workers=4
+      - name: API regression — trading group (SERIAL, TD-004)
+        working-directory: copy-trading-qa/automation
+        run: npx playwright test --project=api --grep @trading --workers=1
+      - name: UI E2E
+        working-directory: copy-trading-qa/automation
+        run: npx playwright test --project=ui --workers=2
+      - name: Accessibility
+        working-directory: copy-trading-qa/automation
+        run: npx playwright test --project=a11y --workers=2
+      - name: Tear down stack + volumes
+        if: always()
+        working-directory: copy-trading-qa/automation
+        run: npm run local:down
+      - name: Upload reports (redacted)
+        if: always()
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+        with:
+          name: qa-app-push-reports-${{ env.APP_SHA }}
+          path: |
+            copy-trading-qa/automation/reports/junit
+            copy-trading-qa/automation/reports/html
+            copy-trading-qa/automation/reports/artifacts
+          retention-days: 14
+          if-no-files-found: ignore
+      - name: Report QA result back to the app commit (best-effort commit status)
+        if: always()
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.APP_REPO_TOKEN }}
+          STATE: ${{ job.status == 'success' && 'success' || 'failure' }}
+        run: |
+          if echo "${APP_SHA}" | grep -qE '^[0-9a-f]{40}$'; then
+            curl -sS -X POST \
+              -H "Authorization: Bearer ${GH_TOKEN}" \
+              -H "Accept: application/vnd.github+json" \
+              "https://api.github.com/repos/Commoditycrm/copy-trading-app/statuses/${APP_SHA}" \
+              -d "{\"state\":\"${STATE}\",\"context\":\"QA / On App Push\",\"description\":\"QA regression ${STATE}\"}" || true
+          else
+            echo "APP_SHA is not a full commit SHA (${APP_SHA}) — skipping commit-status post."
+          fi

@@ -14,6 +14,7 @@ disposable local stack.
 | `performance.yml`     | `workflow_dispatch` only                     | k6 + Playwright perf (load-level / subscriber-count / duration inputs). Refuses production URLs. Sanitized summaries only.                                                                                                                |
 | `broker-contract.yml` | `workflow_dispatch` only                     | `fake` (default, safe) or `paper` (gated `alpaca-paper` environment, `RUN-PAPER` confirm). Never IBKR / live money.                                                                                                                       |
 | `prod-smoke.yml`      | `workflow_dispatch` (gated env)              | **BLOCKED** until DevOps provides account + written authorization + secrets. Read-only `@prod-safe` only.                                                                                                                                 |
+| `app-push.yml`        | `repository_dispatch` (app-main-push), `workflow_dispatch` | **Auto-runs on every push to app `main`.** Checks out the app repo at the pushed SHA (READ-ONLY) and runs the full API (trading serial) + UI E2E + accessibility regression on the disposable fake-broker stack. Posts a best-effort commit status back to the app commit. See "Auto-run on app push" below. |
 
 ## Safety controls (every workflow)
 
@@ -40,7 +41,27 @@ disposable local stack.
 | `ALPACA_PAPER_KEY`, `ALPACA_PAPER_SECRET` | `alpaca-paper` environment     | DevOps                 | Alpaca **Paper** creds for `broker-contract.yml` paper mode. No live money.                                                                           |
 | `PROD_BASE_URL`, `PROD_SMOKE_TOKEN`       | `production-smoke` environment | DevOps / Security lead | Read-only prod smoke target + token. **Not yet provisioned** — `prod-smoke.yml` stays blocked until issued.                                           |
 
+| `QA_DISPATCH_TOKEN` (in the **app** repo) | app repo secret | DevOps | Lets the application repo notify this QA repo on push to `main` (sends a `repository_dispatch`). Fine-grained PAT scoped to `Commoditycrm/copy-trading-qa` with **Contents: Read and write**, a classic PAT with `repo`, or a GitHub App token. |
+
 Environments requiring **reviewer approval**: `qa-regression`, `alpaca-paper`, `production-smoke`.
+(`app-push.yml` is intentionally **not** behind a gated environment — a manual approval per push would defeat auto-run. Its safety comes from the disposable local + fake-broker stack, same as the other stack jobs.)
+
+## Auto-run QA on every app push (`app-push.yml`)
+
+Runs the QA regression automatically whenever a teammate pushes to the **application** repo's `main`, testing the exact commit.
+
+1. **App repo (one-time):** copy `.github/app-repo-snippet/notify-qa.yml` into the application repo at
+   `.github/workflows/notify-qa.yml`, and add the `QA_DISPATCH_TOKEN` secret there (above). On every push to
+   app `main` it sends a `repository_dispatch` (`app-main-push`, carrying the commit SHA) to this repo.
+2. **QA repo:** `app-push.yml` listens for that event, checks out the app repo at the pushed SHA (needs
+   `APP_REPO_TOKEN`), runs API + `@trading` serial + UI + a11y, and (best-effort) posts a `QA / On App Push`
+   commit status back onto the app commit so the result shows up on the app side.
+3. **Manual test:** run `app-push.yml` via *workflow_dispatch* with a `sha` input to verify wiring before the
+   app-repo notifier is added.
+
+Prereqs: `APP_REPO_TOKEN` (this repo) must be provisioned — it is still the outstanding DevOps item that also
+gates `qa-regression`/`nightly`. For the commit-status-back step, `APP_REPO_TOKEN` needs `statuses: write` on
+the app repo (otherwise that step no-ops harmlessly).
 
 ## Artifact retention
 
