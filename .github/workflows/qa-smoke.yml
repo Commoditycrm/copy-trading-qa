@@ -1,0 +1,52 @@
+# QA / Lightsail Smoke — read-only health/smoke against the DEPLOYED QA environment (test.kopyya.com).
+# HTTP-only, zero writes, no broker, no local stack, no app checkout. Safe on the shared QA box. Runs on a
+# schedule (every 6h) and on demand. Change the target by setting a repo VARIABLE `QA_SMOKE_BASE_URL`
+# (Settings → Secrets and variables → Actions → Variables); otherwise it defaults to https://test.kopyya.com.
+name: QA / Lightsail Smoke
+
+on:
+  workflow_dispatch: {}
+  schedule:
+    - cron: '0 */6 * * *' # every 6 hours
+
+permissions:
+  contents: read
+
+concurrency:
+  group: qa-lightsail-smoke
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    name: QA / Lightsail Smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      QA_ENV: qa
+      QA_BASE_URL: ${{ vars.QA_SMOKE_BASE_URL || 'https://test.kopyya.com' }}
+      QA_FRONTEND_URL: ${{ vars.QA_SMOKE_BASE_URL || 'https://test.kopyya.com' }}
+      BROKER_MODE: none
+    steps:
+      - name: Checkout QA repo
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: automation/package-lock.json
+      - name: Install (locked)
+        working-directory: automation
+        run: npm ci
+      - name: Read-only smoke against the deployed QA
+        working-directory: automation
+        run: npx playwright test --project=prod-smoke
+      - name: Upload reports
+        if: always()
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+        with:
+          name: qa-lightsail-smoke-reports
+          path: |
+            automation/reports/junit
+            automation/reports/html
+          retention-days: 14
+          if-no-files-found: ignore
