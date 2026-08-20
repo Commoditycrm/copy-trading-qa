@@ -1,10 +1,12 @@
 /**
- * QA Lightsail read-only smoke (@prod-safe) — runs against the DEPLOYED QA environment (test.kopyya.com),
- * NOT the disposable local stack. HTTP-only, zero writes, no broker, no DB access: it verifies the deployed
- * QA is up and behaving (health, public pages serve, auth is enforced, schema not leaked, edge posture).
+ * Deployed-environment read-only smoke (@prod-safe) — runs against ANY DEPLOYED env (QA or prod), NOT the
+ * disposable local stack. Environment-neutral: relative paths hit whatever QA_BASE_URL points at, so the SAME
+ * file serves every deployed target — only the workflow supplies the URL:
+ *   • QA   → qa-smoke.yml   (QA_BASE_URL = https://test.kopyya.com)
+ *   • prod → prod-smoke.yml (PROD_BASE_URL = https://kopyya.com, gated/authorized)
  *
- * Run: QA_BASE_URL=https://test.kopyya.com BROKER_MODE=none npx playwright test --project=prod-smoke
- * (config.ts already classifies test.kopyya.com as env=qa.) Never mutates data — safe on the shared QA box.
+ * HTTP-only, zero writes, no broker, no DB access: verifies the deployed target is up and behaving (health,
+ * public pages serve, auth is enforced, schema not leaked, edge posture). Never mutates data — safe on a live env.
  */
 import { test, expect, meta } from '../../common/fixtures.js';
 import { assertProdSafe } from '../../common/safety.js';
