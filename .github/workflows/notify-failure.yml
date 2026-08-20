@@ -1,0 +1,47 @@
+# QA / Notify on failure — one central notifier. Fires whenever any of the QA pipelines finishes with a
+# FAILURE and pings your chat channel with a link to the run. Channel-agnostic: it posts to Discord if a
+# DISCORD_WEBHOOK secret is set, else Slack if SLACK_WEBHOOK is set; if neither is set it no-ops (so it never
+# breaks anything before you configure it). GitHub also emails the run's author by default.
+#
+# To enable: add ONE repo secret (Settings → Secrets and variables → Actions → New repository secret):
+#   • DISCORD_WEBHOOK  — a Discord channel webhook URL (Discord → channel → Integrations → Webhooks → New/Copy), OR
+#   • SLACK_WEBHOOK    — a Slack incoming-webhook URL.
+name: QA / Notify on failure
+
+on:
+  workflow_run:
+    workflows: ['QA / On Push', 'QA / On App Push', 'QA / Lightsail Smoke']
+    types: [completed]
+
+permissions:
+  contents: read
+
+jobs:
+  notify:
+    if: ${{ github.event.workflow_run.conclusion == 'failure' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Post failure to Discord/Slack (whichever webhook is configured)
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+          WF: ${{ github.event.workflow_run.name }}
+          BRANCH: ${{ github.event.workflow_run.head_branch }}
+          EVENT: ${{ github.event.workflow_run.event }}
+          ACTOR: ${{ github.event.workflow_run.actor.login }}
+          URL: ${{ github.event.workflow_run.html_url }}
+        run: |
+          MSG="❌ ${WF} FAILED on \`${BRANCH}\` (${EVENT}, by ${ACTOR})
+          ${URL}"
+          if [ -n "${DISCORD_WEBHOOK}" ]; then
+            jq -nc --arg c "${MSG}" '{content:$c}' \
+              | curl -sS --fail -X POST "${DISCORD_WEBHOOK}" -H "Content-Type: application/json" -d @- \
+              && echo "Posted failure to Discord."
+          elif [ -n "${SLACK_WEBHOOK}" ]; then
+            jq -nc --arg t "${MSG}" '{text:$t}' \
+              | curl -sS --fail -X POST "${SLACK_WEBHOOK}" -H "Content-Type: application/json" -d @- \
+              && echo "Posted failure to Slack."
+          else
+            echo "::notice::No DISCORD_WEBHOOK or SLACK_WEBHOOK secret set — add one to enable chat alerts. (GitHub still emails the run author.)"
+          fi

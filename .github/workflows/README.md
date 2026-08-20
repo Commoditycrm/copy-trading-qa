@@ -17,6 +17,7 @@ disposable local stack.
 | `app-push.yml`        | `repository_dispatch` (app-push), `workflow_dispatch` | **Auto-runs on every push to the app repo's `qa-branch`** (the team's active branch; `main` later). Checks out the app repo at the pushed SHA (READ-ONLY) and runs the full API (trading serial) + UI E2E + accessibility regression on the disposable fake-broker stack. Posts a best-effort commit status back to the app commit. See "Auto-run on app push" below. |
 | `qa-push.yml`         | `push` (any branch), `workflow_dispatch`     | **Auto-runs on every push to THIS (QA) repo** — validates test-case changes immediately. Typecheck → full API (trading serial) + UI E2E + accessibility on the disposable fake-broker stack. Needs `APP_REPO_TOKEN`. Concurrency-cancels superseded pushes on the same branch. |
 | `qa-smoke.yml`        | `schedule` (every 6h), `workflow_dispatch`   | **Read-only smoke against the DEPLOYED QA** (`test.kopyya.com`) — health, public pages, auth-required 401s, no schema leak, SA-005 header observation. HTTP-only, no local stack, no broker, no writes. Target override: repo variable `QA_SMOKE_BASE_URL`. No `APP_REPO_TOKEN` needed. |
+| `notify-failure.yml`  | `workflow_run` (on the 3 pipelines above, `completed`) | **Alerts on any QA-pipeline failure.** Posts a run link to Discord (if `DISCORD_WEBHOOK` set) or Slack (if `SLACK_WEBHOOK` set); no-ops until one is configured. GitHub also emails the run author by default. |
 
 ## Safety controls (every workflow)
 
