@@ -15,6 +15,7 @@ disposable local stack.
 | `broker-contract.yml` | `workflow_dispatch` only                     | `fake` (default, safe) or `paper` (gated `alpaca-paper` environment, `RUN-PAPER` confirm). Never IBKR / live money.                                                                                                                       |
 | `prod-smoke.yml`      | `workflow_dispatch` (gated env)              | **BLOCKED** until DevOps provides account + written authorization + secrets. Read-only `@prod-safe` only.                                                                                                                                 |
 | `app-push.yml`        | `repository_dispatch` (app-main-push), `workflow_dispatch` | **Auto-runs on every push to app `main`.** Checks out the app repo at the pushed SHA (READ-ONLY) and runs the full API (trading serial) + UI E2E + accessibility regression on the disposable fake-broker stack. Posts a best-effort commit status back to the app commit. See "Auto-run on app push" below. |
+| `qa-push.yml`         | `push` (any branch), `workflow_dispatch`     | **Auto-runs on every push to THIS (QA) repo** — validates test-case changes immediately. Typecheck → full API (trading serial) + UI E2E + accessibility on the disposable fake-broker stack. Needs `APP_REPO_TOKEN`. Concurrency-cancels superseded pushes on the same branch. |
 
 ## Safety controls (every workflow)
 

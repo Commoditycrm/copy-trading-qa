@@ -1,0 +1,97 @@
+# QA / On Push — runs the FULL functional regression on EVERY push to the QA repo (any branch), so a
+# test-case change is validated immediately. Disposable local stack, fake broker only. The application repo
+# is checked out READ-ONLY (ref: qa-branch) as a build context and never modified.
+#
+# Suite: Typecheck → API (non-trading parallel) → API @trading (serial, TD-004) → UI E2E → Accessibility.
+# (Performance is measurement, not pass/fail — it stays in performance.yml. Security is the @security subset
+#  already covered inside the api/ui projects.)
+name: QA / On Push
+
+on:
+  push:
+    branches: ['**'] # all branches, not tags
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  # A newer push on the same branch supersedes an in-flight run.
+  group: qa-on-push-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  regression:
+    name: QA / On Push
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      QA_ENV: local
+      BROKER_MODE: fake
+    steps:
+      - name: Checkout QA repo
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          path: copy-trading-qa
+      - uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: copy-trading-qa/automation/package-lock.json
+      - name: Cache Playwright browsers
+        uses: actions/cache@1bd1e32a3bdc45362d1e726936510720a7c30a57 # v4.2.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('copy-trading-qa/automation/package-lock.json') }}
+      - name: Install (locked)
+        working-directory: copy-trading-qa/automation
+        run: npm ci
+      # Typecheck first — fails fast on a broken test/helper before the expensive stack build, and runs even
+      # if APP_REPO_TOKEN isn't provisioned yet.
+      - name: Typecheck
+        working-directory: copy-trading-qa/automation
+        run: npx tsc --noEmit
+      - name: Checkout application repo (READ-ONLY, build context only)
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          repository: Commoditycrm/copy-trading-app
+          ref: qa-branch
+          token: ${{ secrets.APP_REPO_TOKEN }}
+          path: copy-trading-app
+          persist-credentials: false
+      - name: Install Chromium
+        working-directory: copy-trading-qa/automation
+        run: npx playwright install --with-deps chromium
+      - name: Bring up full stack (fake broker)
+        working-directory: copy-trading-qa/automation
+        run: npm run local:up:full
+      - name: Wait for health
+        working-directory: copy-trading-qa/automation
+        run: npm run local:health
+      - name: API — non-trading (parallel)
+        working-directory: copy-trading-qa/automation
+        run: npx playwright test --project=api --grep-invert @trading --workers=4
+      - name: API — trading group (SERIAL, TD-004)
+        working-directory: copy-trading-qa/automation
+        run: npx playwright test --project=api --grep @trading --workers=1
+      - name: UI E2E
+        working-directory: copy-trading-qa/automation
+        run: npx playwright test --project=ui --workers=2
+      - name: Accessibility
+        working-directory: copy-trading-qa/automation
+        run: npx playwright test --project=a11y --workers=2
+      - name: Tear down stack + volumes
+        if: always()
+        working-directory: copy-trading-qa/automation
+        run: npm run local:down
+      - name: Upload reports (redacted)
+        if: always()
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+        with:
+          name: qa-on-push-reports
+          path: |
+            copy-trading-qa/automation/reports/junit
+            copy-trading-qa/automation/reports/html
+            copy-trading-qa/automation/reports/artifacts
+          retention-days: 14
+          if-no-files-found: ignore
