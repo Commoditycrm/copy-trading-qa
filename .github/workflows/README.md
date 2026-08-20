@@ -14,7 +14,7 @@ disposable local stack.
 | `performance.yml`     | `workflow_dispatch` only                     | k6 + Playwright perf (load-level / subscriber-count / duration inputs). Refuses production URLs. Sanitized summaries only.                                                                                                                |
 | `broker-contract.yml` | `workflow_dispatch` only                     | `fake` (default, safe) or `paper` (gated `alpaca-paper` environment, `RUN-PAPER` confirm). Never IBKR / live money.                                                                                                                       |
 | `prod-smoke.yml`      | `workflow_dispatch` (gated env)              | **BLOCKED** until DevOps provides account + written authorization + secrets. Read-only `@prod-safe` only.                                                                                                                                 |
-| `app-push.yml`        | `repository_dispatch` (app-main-push), `workflow_dispatch` | **Auto-runs on every push to app `main`.** Checks out the app repo at the pushed SHA (READ-ONLY) and runs the full API (trading serial) + UI E2E + accessibility regression on the disposable fake-broker stack. Posts a best-effort commit status back to the app commit. See "Auto-run on app push" below. |
+| `app-push.yml`        | `repository_dispatch` (app-push), `workflow_dispatch` | **Auto-runs on every push to the app repo's `qa-branch`** (the team's active branch; `main` later). Checks out the app repo at the pushed SHA (READ-ONLY) and runs the full API (trading serial) + UI E2E + accessibility regression on the disposable fake-broker stack. Posts a best-effort commit status back to the app commit. See "Auto-run on app push" below. |
 | `qa-push.yml`         | `push` (any branch), `workflow_dispatch`     | **Auto-runs on every push to THIS (QA) repo** — validates test-case changes immediately. Typecheck → full API (trading serial) + UI E2E + accessibility on the disposable fake-broker stack. Needs `APP_REPO_TOKEN`. Concurrency-cancels superseded pushes on the same branch. |
 
 ## Safety controls (every workflow)
@@ -49,11 +49,11 @@ Environments requiring **reviewer approval**: `qa-regression`, `alpaca-paper`, `
 
 ## Auto-run QA on every app push (`app-push.yml`)
 
-Runs the QA regression automatically whenever a teammate pushes to the **application** repo's `main`, testing the exact commit.
+Runs the QA regression automatically whenever a teammate pushes to the **application** repo's `qa-branch` (the team's active branch — switch to `main` later by editing one line), testing the exact commit.
 
 1. **App repo (one-time):** copy `.github/app-repo-snippet/notify-qa.yml` into the application repo at
    `.github/workflows/notify-qa.yml`, and add the `QA_DISPATCH_TOKEN` secret there (above). On every push to
-   app `main` it sends a `repository_dispatch` (`app-main-push`, carrying the commit SHA) to this repo.
+   app `qa-branch` it sends a `repository_dispatch` (`app-push`, carrying the commit SHA) to this repo.
 2. **QA repo:** `app-push.yml` listens for that event, checks out the app repo at the pushed SHA (needs
    `APP_REPO_TOKEN`), runs API + `@trading` serial + UI + a11y, and (best-effort) posts a `QA / On App Push`
    commit status back onto the app commit so the result shows up on the app side.

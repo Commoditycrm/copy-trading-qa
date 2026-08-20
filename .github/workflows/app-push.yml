@@ -1,7 +1,8 @@
-# QA / On App Push — runs the QA regression automatically when the APPLICATION team pushes to app `main`.
+# QA / On App Push — runs the QA regression automatically when the APPLICATION team pushes to the app repo
+# (currently the `qa-branch` — the team's active branch; `main` comes later).
 #
-# Trigger: a `repository_dispatch` (type: app-main-push) sent BY the application repo on every push to main.
-# The application team adds a small notifier to their repo — see `.github/app-repo-snippet/notify-qa.yml`.
+# Trigger: a `repository_dispatch` (type: app-push) sent BY the application repo on every push to its active
+# branch. The application team adds a small notifier to their repo — see `.github/app-repo-snippet/notify-qa.yml`.
 # Also manually runnable (`workflow_dispatch`) with a SHA for testing.
 #
 # The application repo is checked out READ-ONLY at the exact pushed commit and never modified. Runs on a
@@ -14,7 +15,7 @@ name: QA / On App Push
 
 on:
   repository_dispatch:
-    types: [app-main-push]
+    types: [app-push]
   workflow_dispatch:
     inputs:
       sha:

@@ -5,8 +5,9 @@
 # It is a TEMPLATE kept here in the QA repo — it does NOT run from this location
 # (only files under .github/workflows/ execute, and this lives under app-repo-snippet/).
 #
-# What it does: on every push to app `main`, it tells the QA repo to run its regression
-# (workflow "QA / On App Push") against the exact commit that was just pushed.
+# What it does: on every push to app `qa-branch` (the team's active branch), it tells the QA repo to run its
+# regression (workflow "QA / On App Push") against the exact commit that was just pushed.
+# When the team moves to `main`, just add `main` to the branches list below.
 #
 # Setup (one-time, by the app team / DevOps):
 #   1. Create a token that may send a repository_dispatch to the QA repo:
@@ -17,11 +18,11 @@
 #   3. Ensure the QA repo has APP_REPO_TOKEN (read access to this app repo) so it can check out
 #      the pushed commit — see the QA repo's .github/workflows/README.md.
 # ─────────────────────────────────────────────────────────────────────────────
-name: Notify QA on push to main
+name: Notify QA on push
 
 on:
   push:
-    branches: [main]
+    branches: [qa-branch] # the team's active branch; add `main` here when you move to it
 
 permissions:
   contents: read
@@ -46,5 +47,5 @@ jobs:
             -H "Authorization: Bearer ${QA_TOKEN}" \
             -H "Accept: application/vnd.github+json" \
             "https://api.github.com/repos/Commoditycrm/copy-trading-qa/dispatches" \
-            -d "{\"event_type\":\"app-main-push\",\"client_payload\":{\"sha\":\"${GITHUB_SHA}\",\"ref\":\"${GITHUB_REF_NAME}\",\"actor\":\"${GITHUB_ACTOR}\"}}"
-          echo "Dispatched app-main-push for ${GITHUB_SHA} → QA / On App Push"
+            -d "{\"event_type\":\"app-push\",\"client_payload\":{\"sha\":\"${GITHUB_SHA}\",\"ref\":\"${GITHUB_REF_NAME}\",\"actor\":\"${GITHUB_ACTOR}\"}}"
+          echo "Dispatched app-push for ${GITHUB_SHA} → QA / On App Push"
