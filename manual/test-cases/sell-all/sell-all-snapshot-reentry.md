@@ -942,8 +942,8 @@ environment: [qa]
 production_safe: false
 destructive: false
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: ''
+automation_status: Automated
+automation_ref: 'automation/api/tests/sell-all/sell-all-access.spec.ts'
 owner: unassigned
 status: Draft
 last_reviewed: 2026-09-08
@@ -1026,8 +1026,8 @@ environment: [qa]
 production_safe: false
 destructive: false
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: ''
+automation_status: Automated
+automation_ref: 'automation/api/tests/sell-all/sell-all-access.spec.ts'
 owner: unassigned
 status: Draft
 last_reviewed: 2026-09-08
@@ -1082,8 +1082,8 @@ environment: [qa]
 production_safe: false
 destructive: false
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: ''
+automation_status: Automated
+automation_ref: 'automation/ui/tests/safe-inputs.spec.ts'
 owner: unassigned
 status: Draft
 last_reviewed: 2026-09-08
