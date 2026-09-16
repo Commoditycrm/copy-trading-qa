@@ -1014,7 +1014,7 @@ evidence_requirements: [Shows “not enabled for your account — ask an admin�
 
 ```yaml
 id: TC-SELL-004-33
-title: Subscriber never eligible (trader-only)
+title: Non-allow-listed subscriber is blocked (403 sell_all_access_required)
 primary_func_id: SELL-004
 related_func_ids: []
 module: sell-all
@@ -1030,13 +1030,13 @@ automation_status: Automated
 automation_ref: 'automation/api/tests/sell-all/sell-all-access.spec.ts'
 owner: unassigned
 status: Draft
-last_reviewed: 2026-09-08
+last_reviewed: 2026-09-16
 tags: [sell-all, security, api, P0]
 source_refs: [POST /api/positions/close-all, Kopyya_SellAll_Snapshot_PDC_Test_Guide.pdf TC-33]
-evidence_requirements: [Suite never shown; endpoints 403 with trader_only (the gate is trader-only regardless of the flag).]
+evidence_requirements: [Suite hidden for a subscriber without access; endpoints 403 with sell_all_access_required.]
 ```
-**Steps:** 1) As a subscriber, check the UI and call the sell-all endpoints.
-**Expected Results:** Suite never shown; endpoints 403 with trader_only (the gate is trader-only regardless of the flag).
+**Steps:** 1) As a subscriber without Sell-All access, check the UI and call the sell-all endpoints.
+**Expected Results:** Suite not shown; endpoints 403 with sell_all_access_required. NOTE — app 4ccccef opened the suite to subscribers (admin allow-listed on Admin → Users), so a subscriber is gated by the allow-list exactly like a trader; the old subscriber-only `trader_only` reply no longer applies.
 
 ---
 

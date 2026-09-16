@@ -18,10 +18,11 @@ as `/snapshots/latest`). Still behind `require_sell_all_access`.
 "Today" is the US/Eastern trading day — test during/after market hours so Current price populates. **Paper
 account only — never a live-funded broker.**
 
-**Automation:** manual for now — DS-01…DS-13 need a real Alpaca-paper broker, live quotes, SSE and actual
-exits/re-entries, which the disposable mock-broker stack does not provide. Automation candidate (no broker /
-market data needed): the access-gate authZ check **TC-SNAP-006-14** on `GET /api/positions/snapshots/today` —
-folds into the existing gate spec `automation/api/tests/sell-all/sell-all-access.spec.ts`.
+**Automation:** DS-01…DS-13 stay manual — they need a real Alpaca-paper broker, live quotes, SSE and actual
+exits/re-entries, which the disposable mock-broker stack does not provide. **TC-SNAP-006-14** (access-gate authZ
+on `GET /api/positions/snapshots/today`, no broker / market data needed) is **Automated** in
+`automation/api/tests/sell-all/sell-all-access.spec.ts` — the endpoint rides the shared `require_sell_all_access`
+gate, so both gate tests (non-allow-listed trader and subscriber) assert it returns 403 `sell_all_access_required`.
 
 ## Functional areas
 
@@ -412,8 +413,8 @@ environment: [qa]
 production_safe: false
 destructive: false
 automation_candidate: true
-automation_status: Not Automated
-automation_ref: ''
+automation_status: Automated
+automation_ref: 'automation/api/tests/sell-all/sell-all-access.spec.ts'
 owner: unassigned
 status: Draft
 last_reviewed: 2026-09-16
