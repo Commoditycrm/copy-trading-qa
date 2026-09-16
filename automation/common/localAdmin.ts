@@ -46,6 +46,14 @@ export function deleteUser(cfg: QaConfig, email: string): void {
   assertSynthetic(email);
   psql(`DELETE FROM users WHERE email='${email}'`);
 }
+/** Enable the inbound Discord feature for a namespaced test trader (the admin opt-in
+ *  users.discord_enabled, off by default). LOCAL-ONLY — needs the discord-webhook build. */
+export function enableDiscord(cfg: QaConfig, email: string): void {
+  assertLocal(cfg);
+  assertSynthetic(email);
+  psql(`UPDATE users SET discord_enabled=true WHERE email='${email}'`);
+}
+
 /** Read is_active for assertions. */
 export function isActive(cfg: QaConfig, email: string): boolean {
   assertLocal(cfg);

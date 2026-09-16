@@ -18,9 +18,13 @@ running, and Redis reachable. 'Today' is the US/Eastern trading day.
 `execution_mode=auto` + `live_trading=true` places a REAL order per posted alert with no review step. Reset to
 `manual` + paper before exploratory testing. Paper account only — never a live-funded broker.
 
-**Automation:** manual — these need a real Discord account + channel, a connected broker, live quotes and the
-listener container, which the disposable mock-broker stack does not provide. Parser and execution behaviour
-(areas 04, 07, 08) already carry backend unit coverage on the app branch (`backend/tests/test_discord_*.py`).
+**Automation:** most cases are manual — they need a real Discord account + channel, a connected broker, live
+quotes and the listener container, which the disposable mock-broker stack does not provide. The **API / authZ /
+validation** subset that needs neither the listener nor a broker IS automated in
+`automation/api/tests/discord/discord-access.spec.ts` (DA-CONN-04/05/06/07/11, DA-SEC-01/05/06, DA-SIZE-10/11,
+DA-TRAIL-11 — 11 cases, run on the disposable stack via the `docker-compose.discord.yml` overlay + the grey-box
+`enableDiscord` helper). Parser and execution behaviour (areas 04, 07, 08) additionally carry backend unit
+coverage on the app branch (`backend/tests/test_discord_*.py` — 258 pass / 2 stale-fail as of 2026-09-16).
 
 **Verified notes:** where a `**Verified**` line appears, the guide's expectation was checked against the code on
 `discord-webhook` @ `af853ce`; a note flags any wording to correct before running or an app-side defect to report.
@@ -142,8 +146,8 @@ environment: [qa]
 production_safe: false
 destructive: false
 automation_candidate: false
-automation_status: Not Automated
-automation_ref: ''
+automation_status: Automated
+automation_ref: 'automation/api/tests/discord/discord-access.spec.ts'
 owner: unassigned
 status: Draft
 last_reviewed: 2026-09-16
@@ -170,8 +174,8 @@ environment: [qa]
 production_safe: false
 destructive: false
 automation_candidate: false
-automation_status: Not Automated
-automation_ref: ''
+automation_status: Automated
+automation_ref: 'automation/api/tests/discord/discord-access.spec.ts'
 owner: unassigned
 status: Draft
 last_reviewed: 2026-09-16
@@ -199,8 +203,8 @@ environment: [qa]
 production_safe: false
 destructive: false
 automation_candidate: false
-automation_status: Not Automated
-automation_ref: ''
+automation_status: Automated
+automation_ref: 'automation/api/tests/discord/discord-access.spec.ts'
 owner: unassigned
 status: Draft
 last_reviewed: 2026-09-16
@@ -228,8 +232,8 @@ environment: [qa]
 production_safe: false
 destructive: false
 automation_candidate: false
-automation_status: Not Automated
-automation_ref: ''
+automation_status: Automated
+automation_ref: 'automation/api/tests/discord/discord-access.spec.ts'
 owner: unassigned
 status: Draft
 last_reviewed: 2026-09-16
@@ -340,8 +344,8 @@ environment: [qa]
 production_safe: false
 destructive: false
 automation_candidate: false
-automation_status: Not Automated
-automation_ref: ''
+automation_status: Automated
+automation_ref: 'automation/api/tests/discord/discord-access.spec.ts'
 owner: unassigned
 status: Draft
 last_reviewed: 2026-09-16
@@ -2494,8 +2498,8 @@ environment: [qa]
 production_safe: false
 destructive: false
 automation_candidate: false
-automation_status: Not Automated
-automation_ref: ''
+automation_status: Automated
+automation_ref: 'automation/api/tests/discord/discord-access.spec.ts'
 owner: unassigned
 status: Draft
 last_reviewed: 2026-09-16
@@ -2522,8 +2526,8 @@ environment: [qa]
 production_safe: false
 destructive: false
 automation_candidate: false
-automation_status: Not Automated
-automation_ref: ''
+automation_status: Automated
+automation_ref: 'automation/api/tests/discord/discord-access.spec.ts'
 owner: unassigned
 status: Draft
 last_reviewed: 2026-09-16
@@ -3259,8 +3263,8 @@ environment: [qa]
 production_safe: false
 destructive: false
 automation_candidate: false
-automation_status: Not Automated
-automation_ref: ''
+automation_status: Automated
+automation_ref: 'automation/api/tests/discord/discord-access.spec.ts'
 owner: unassigned
 status: Draft
 last_reviewed: 2026-09-16
@@ -3574,8 +3578,8 @@ environment: [qa]
 production_safe: false
 destructive: false
 automation_candidate: false
-automation_status: Not Automated
-automation_ref: ''
+automation_status: Automated
+automation_ref: 'automation/api/tests/discord/discord-access.spec.ts'
 owner: unassigned
 status: Draft
 last_reviewed: 2026-09-16
@@ -3686,8 +3690,8 @@ environment: [qa]
 production_safe: false
 destructive: false
 automation_candidate: false
-automation_status: Not Automated
-automation_ref: ''
+automation_status: Automated
+automation_ref: 'automation/api/tests/discord/discord-access.spec.ts'
 owner: unassigned
 status: Draft
 last_reviewed: 2026-09-16
@@ -3714,8 +3718,8 @@ environment: [qa]
 production_safe: false
 destructive: false
 automation_candidate: false
-automation_status: Not Automated
-automation_ref: ''
+automation_status: Automated
+automation_ref: 'automation/api/tests/discord/discord-access.spec.ts'
 owner: unassigned
 status: Draft
 last_reviewed: 2026-09-16

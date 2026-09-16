@@ -1,0 +1,17 @@
+# Overlay for the disposable stack when exercising the Discord alert-ingestion feature
+# (app branch `discord-webhook`). Turns on the inbound-listener gate and sets the listener
+# token so `/internal/*` authenticate — the API / authZ / validation cases run WITHOUT the
+# discord-listener (Chromium DOM watcher) container or a live Discord session.
+#
+# Run the app repo on the discord-webhook branch, then:
+#   docker compose -f docker-compose.qa.yml -f docker-compose.discord.yml up -d --build \
+#     db redis mock-broker backend worker
+services:
+  backend:
+    environment:
+      DISCORD_LISTENER_ENABLED: '1'
+      DISCORD_LISTENER_TOKEN: 'qa-discord-listener-token'
+  worker:
+    environment:
+      DISCORD_LISTENER_ENABLED: '1'
+      DISCORD_LISTENER_TOKEN: 'qa-discord-listener-token'
