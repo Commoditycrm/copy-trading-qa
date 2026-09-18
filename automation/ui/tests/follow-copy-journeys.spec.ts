@@ -55,6 +55,8 @@ test.describe('WF-08/09 Follow + copy journeys (UI)', () => {
       await seedSession(page, { access: sub.access, refresh: sub.refresh });
       const settings = new SettingsPage(page);
       await settings.open();
+      // The Traders list is search-gated — search first, then the trader's row appears.
+      await settings.searchTrader(traderU.business_name!);
       const row = settings.traderRow(traderU.business_name!);
       await expect(row).toBeVisible();
       await row.getByRole('button', { name: /request to follow/i }).click();

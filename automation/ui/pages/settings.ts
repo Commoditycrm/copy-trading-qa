@@ -14,6 +14,11 @@ export class SettingsPage extends BasePage {
     return this.page.getByRole('heading', { name: 'Traders', level: 2 }).locator('..');
   }
 
+  /** The Traders list is search-gated — it's empty until you search. Type a name/email to reveal rows. */
+  async searchTrader(query: string): Promise<void> {
+    await this.page.getByPlaceholder(/search traders/i).fill(query);
+  }
+
   /** A trader row located by its display/business name text (nearest ancestor that holds the row's button). */
   traderRow(name: string | RegExp): Locator {
     return this.page.getByText(name).locator('xpath=ancestor::*[.//button][1]');
@@ -23,12 +28,13 @@ export class SettingsPage extends BasePage {
     return this.traderRow(name).getByRole('button', { name: /request to follow|request again|^follow$/i });
   }
 
-  // The copy-size multiplier is the only number input bounded 0.1–10 (other /settings spinbuttons differ).
-  readonly multiplier = this.page.locator('input[step="0.1"][max="10"]').first();
+  // The copy-size multiplier is a native <select> (SelectInput, aria-label "Copy size multiplier"),
+  // options ×0.25/×0.5 then 1–10 in 0.5 steps — no longer a free number input.
+  readonly multiplier = this.page.getByLabel('Copy size multiplier');
   readonly saveMultiplier = this.multiplier.locator('xpath=following::button[normalize-space()="Save"][1]');
 
   async setMultiplier(value: number): Promise<void> {
-    await this.multiplier.fill(String(value));
+    await this.multiplier.selectOption(String(value));
     await this.saveMultiplier.click();
   }
 }
