@@ -198,7 +198,9 @@ test.describe('Background jobs & recovery', () => {
       const sub = p.subs[0]!;
       await s.dailyLoss(api, p.subAccess[0]!, 50);
       await mb.setPnlSnapshot(sub.account_id!, { todays_pl: -100, beginning_day_balance: 1000, equity: 900 });
-      const r = mb.pollerEnforce(sub.account_id!);
+      // The daily-loss kill switch is gated to the regular session (pnl_poller), so run the tick
+      // "in session" — Thu 2026-09-17 12:00 ET — instead of at the wall-clock test time.
+      const r = mb.pollerEnforce(sub.account_id!, '2026-09-17T12:00:00-04:00');
       expect(r.copy_enabled, 'copy paused by the poller').toBe(false);
       expect(subSetting(config, sub.user_id, 'pnl_auto_paused_at')).not.toBe('');
       expect(auditByActor(config, 'copy.auto_paused_daily_loss_limit', sub.user_id)).toBeGreaterThanOrEqual(1);

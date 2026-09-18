@@ -249,9 +249,14 @@ export class MockBroker {
   ): Promise<any> {
     return admin('POST', '/admin/pnl-snapshot', { run_id: this.runId, account_id: accountId, snapshot });
   }
-  /** Run the app's real poller tick for one subscriber account (auto-resume / kill-switch / liquidation). */
-  pollerEnforce(accountId: string): { copy_enabled: boolean | null; auto_liquidated: boolean | null } {
-    return this.drive('poller_enforce', { account_id: accountId });
+  /** Run the app's real poller tick for one subscriber account (auto-resume / kill-switch / liquidation).
+   *  Pass `frozenEt` (ISO ET) to run it "in session" — the daily loss/profit kill-switches are gated to
+   *  the regular session, so they only fire when now_et is inside 09:30-16:00 ET. */
+  pollerEnforce(
+    accountId: string,
+    frozenEt?: string,
+  ): { copy_enabled: boolean | null; auto_liquidated: boolean | null } {
+    return this.drive('poller_enforce', { account_id: accountId, frozen_et: frozenEt });
   }
 
   // ── background jobs / recovery (grey-box) ──

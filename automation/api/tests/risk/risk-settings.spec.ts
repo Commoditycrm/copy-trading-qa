@@ -149,13 +149,13 @@ test.describe('Risk-control settings', () => {
     }
   });
 
-  test('TC-RISK-005-001 max-per-contract enforces ge=0 @risk @api @P2 @boundary', async ({ api, config }, info) => {
+  test('TC-RISK-005-001 max-per-contract enforces gt=0 @risk @api @P2 @boundary', async ({ api, config }, info) => {
     meta(info, 'RISK-005');
     const p = await provisionFanout(api, config, [{}]);
     try {
       const t = p.subAccess[0]!;
       expect((await s.maxPerContract(api, t, -1)).status()).toBe(422);
-      expect((await s.maxPerContract(api, t, 0)).status()).toBe(200); // ge=0 allows 0
+      expect((await s.maxPerContract(api, t, 0)).status()).toBe(422); // gt=0 rejects 0 (must be positive)
       expect((await s.maxPerContract(api, t, 5)).status()).toBe(200);
       expect(Number(subSetting(config, p.subs[0]!.user_id, 'max_per_contract'))).toBe(5);
     } finally {
@@ -235,7 +235,7 @@ test.describe('Risk-control settings', () => {
     }
   });
 
-  test('TC-RISK-005-005 max-per-contract change does NOT bust the subscriber cache @risk @api @P2 @data-integrity', async ({
+  test('TC-RISK-005-005 max-per-contract change busts the subscriber cache @risk @api @P2 @data-integrity', async ({
     api,
     config,
   }, info) => {
@@ -247,10 +247,12 @@ test.describe('Risk-control settings', () => {
       await expect.poll(() => childOrders(config, parent).length, { timeout: 20000 }).toBe(1);
       expect(subscriberCacheExists(config, p.traderId)).toBe(true);
       expect((await s.maxPerContract(api, p.subAccess[0]!, 5)).status()).toBe(200);
+      // set_max_per_contract now invalidates the fanout cache so the new ceiling
+      // applies on the very next trade (settings.py: invalidate_subscribers_for_trader).
       expect(
         subscriberCacheExists(config, p.traderId),
-        'documented divergence: max-per-contract does not bust cache',
-      ).toBe(true);
+        'max-per-contract change busts the fanout cache',
+      ).toBe(false);
     } finally {
       p.cleanup();
     }

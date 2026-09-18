@@ -16,8 +16,10 @@ const SESSION_KEYS = ['present', 'cookie_count', 'captured_at', 'age_days'];
 
 /** Feature detection: internal route exists (401/503) vs absent (404) → run only on the discord build. */
 async function discordPresent(api: any): Promise<boolean> {
+  // 404 = the discord build isn't present; 503 = the listener is disabled / no token on this env
+  // (the docker-compose.discord.yml overlay isn't applied). Either way the suite can't run → skip.
   const res = await api.get('/api/discord-sources/internal/assignments');
-  return res.status() !== 404;
+  return res.status() !== 404 && res.status() !== 503;
 }
 
 async function enabledTrader(api: any, config: any): Promise<{ email: string; token: string }> {

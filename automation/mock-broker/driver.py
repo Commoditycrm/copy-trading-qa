@@ -126,6 +126,13 @@ elif action == "poller_enforce":
     # Run the app's real per-subscriber poller tick (auto-resume + daily kill-switches + auto-liquidation).
     from app.services import pnl_poller
     from app.models.broker_account import BrokerAccount
+    # Optional injectable ET clock (driver process only). The daily loss/profit
+    # kill-switches are gated to the regular session (pnl_poller), so a test that
+    # wants them to fire must run "in session" — pass frozen_et inside 09:30-16:00 ET.
+    if spec.get("frozen_et"):
+        from app.services import market_hours  # noqa: PLC0415
+        _frozen = datetime.fromisoformat(spec["frozen_et"])
+        market_hours.now_et = lambda: _frozen  # noqa: E731 — driver process only
     with SessionLocal() as db:
         acct = db.get(BrokerAccount, uuid.UUID(spec["account_id"]))
         db.expunge(acct)

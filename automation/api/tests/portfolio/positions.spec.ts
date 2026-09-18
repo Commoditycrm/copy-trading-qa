@@ -10,6 +10,7 @@ import * as pos from '../../clients/positionsApi.js';
 import { provisionFanout } from '../trading/helpers.js';
 import { MockBroker } from '../../../common/mockBrokerClient.js';
 import { sideOrderCount } from '../../../common/tradingSetup.js';
+import { enableSellAll } from '../../../common/localAdmin.js';
 
 test.describe('Positions', () => {
   test.skip(({ config }) => config.envName !== 'local', 'Requires the local stack + mock broker.');
@@ -124,6 +125,8 @@ test.describe('Positions', () => {
     await mb.resetScenario();
     const p = await provisionFanout(api, config, []);
     try {
+      // close-all is behind the Sell-All access gate (require_sell_all_access); grant it to the trader.
+      enableSellAll(config, p.traderEmail);
       await mb.setPosition(p.brokerAccountId, [
         { symbol: 'AAPL', quantity: 10, current_price: 110 },
         { symbol: 'MSFT', quantity: 5, current_price: 190 },

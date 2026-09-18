@@ -54,6 +54,15 @@ export function enableDiscord(cfg: QaConfig, email: string): void {
   psql(`UPDATE users SET discord_enabled=true WHERE email='${email}'`);
 }
 
+/** Grant the Sell-All suite to a namespaced test user (the admin allow-list
+ *  users.sell_all_access, off by default). LOCAL-ONLY. Needed by any test that
+ *  exercises close-all / re-enter / snapshots, which are gated by require_sell_all_access. */
+export function enableSellAll(cfg: QaConfig, email: string): void {
+  assertLocal(cfg);
+  assertSynthetic(email);
+  psql(`UPDATE users SET sell_all_access=true WHERE email='${email}'`);
+}
+
 /** Read is_active for assertions. */
 export function isActive(cfg: QaConfig, email: string): boolean {
   assertLocal(cfg);
