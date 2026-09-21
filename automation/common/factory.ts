@@ -5,7 +5,11 @@
 import { faker } from '@faker-js/faker';
 
 // Run id: injected by CI (QA_RUN_ID) or derived once per process. Date.now() is fine in test code.
-export const RUN_ID = process.env.QA_RUN_ID || `${Date.now().toString(36)}${Math.floor(Math.random() * 1e4)}`;
+// In CI every worker shares one QA_RUN_ID, so suffix the Playwright worker index — otherwise the
+// run-id-scoped mock reset in one worker wipes another worker's positions mid-test (green locally,
+// where each worker gets its own random id; flaky in CI). TEST_WORKER_INDEX is never reused.
+const RUN_BASE = process.env.QA_RUN_ID || `${Date.now().toString(36)}${Math.floor(Math.random() * 1e4)}`;
+export const RUN_ID = `${RUN_BASE}-w${process.env.TEST_WORKER_INDEX ?? '0'}`;
 
 // Synthetic QA domain. NOTE: the app's Pydantic EmailStr rejects IANA special-use TLDs
 // (.test/.example/.invalid/.localhost) with "special-use or reserved name", so register-based flows
