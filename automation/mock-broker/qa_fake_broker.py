@@ -140,7 +140,9 @@ class FakeBrokerAdapter(BrokerAdapter):
             return None
         return {k: _dec(v) for k, v in snap.items()}
 
-    def get_positions(self) -> list[BrokerPosition]:
+    def get_positions(self, *, cached_ok: bool = False) -> list[BrokerPosition]:
+        # cached_ok mirrors the real adapters' keyword-only arg (base.get_positions). The list
+        # endpoint passes cached_ok=True; the mock is the source of truth so we always read live.
         try:
             r = _http("GET", "/broker/positions", query=f"?run_id={self._run}&account_id={self._acct}")
         except (urllib.error.URLError, OSError):
