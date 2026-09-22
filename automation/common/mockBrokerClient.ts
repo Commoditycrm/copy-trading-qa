@@ -218,13 +218,60 @@ export class MockBroker {
   runRetry(orderId: string): any {
     return this.drive('run_retry', { order_id: orderId });
   }
-  /** Seed today's FIFO-realized P&L for a subscriber (matched BUY→SELL); pnl = (sell-buy)*qty. */
+  /** Seed today's FIFO-realized P&L (matched BUY→SELL). For options (instrument_type:'option') the app
+   *  applies the 100x contract multiplier; omit sell_price to leave the position OPEN (no realized P&L). */
   seedPnl(
     userId: string,
     accountId: string,
-    o: { symbol?: string; quantity: number; buy_price: number; sell_price: number },
-  ): { seeded_pnl: string } {
+    o: {
+      symbol?: string;
+      quantity: number;
+      buy_price: number;
+      sell_price?: number;
+      instrument_type?: 'stock' | 'option';
+      option_expiry?: string;
+      option_strike?: number | string;
+      option_right?: 'call' | 'put';
+    },
+  ): { seeded_pnl: string | null } {
     return this.drive('seed_pnl', { user_id: userId, account_id: accountId, ...o });
+  }
+
+  /** Run the app's shared OCC classifier (app.brokers.alpaca, as fills_sync uses it) over symbols the
+   *  fake activity feed can't be driven through — short-ticker / dotted / odd-strike classification. */
+  classifyOcc(symbols: string[]): {
+    classified: Array<{
+      symbol: string;
+      is_option: boolean;
+      root: string | null;
+      expiry: string | null;
+      strike: string | null;
+      right: string | null;
+    }>;
+  } {
+    return this.drive('classify_occ', { symbols });
+  }
+
+  /** Drive the OCC-retag migration (b6f1d3a9c72e) logic: seed a STOCK-tagged short-ticker OCC order, run
+   *  the retag UPDATE twice, and report the retagged row + rows changed per pass + remaining mis-tags. */
+  occRetagProbe(
+    userId: string,
+    accountId: string,
+    symbol?: string,
+  ): {
+    rows_changed_first: number;
+    rows_changed_second: number;
+    alembic_head: string;
+    stock_occ_remaining: number;
+    retagged: {
+      instrument_type: string;
+      symbol: string;
+      option_strike: string | null;
+      option_expiry: string | null;
+      option_right: string | null;
+    };
+  } {
+    return this.drive('occ_retag_probe', { user_id: userId, account_id: accountId, symbol });
   }
   /** Run the app's real per-position TP/SL enforcer against the mock adapter's positions. */
   enforcePositionTpSl(userId: string, accountId: string): { closed_count: number; closed: string[] } {

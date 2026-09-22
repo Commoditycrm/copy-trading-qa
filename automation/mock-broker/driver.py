@@ -93,25 +93,101 @@ elif action == "fanout_order":
         out["fanned"] = len(results) if results else 0
 
 elif action == "seed_pnl":
-    # Seed today's FIFO-realized P&L for a subscriber via a matched BUY→SELL pair of filled orders
-    # (no Fill rows needed — today_realized_pnl_bulk falls back to Order.filled_quantity/avg_price).
-    from datetime import timedelta
+    # Seed today's FIFO-realized P&L via a matched BUY→SELL pair of filled orders (no Fill rows needed —
+    # today_realized_pnl_bulk falls back to Order.filled_quantity/avg_price). instrument_type=option
+    # exercises the 100x contract multiplier (pnl.py keys the multiplier off Order.instrument_type);
+    # pass no sell_price to leave the position OPEN (a still-open leg has no realized P&L).
+    from datetime import timedelta, date as _date
     from decimal import Decimal
-    from app.models.order import Order, OrderStatus, OrderSide, OrderType, InstrumentType
+    from app.models.order import Order, OrderStatus, OrderSide, OrderType, InstrumentType, OptionRight
     uid = uuid.UUID(spec["user_id"]); acct = uuid.UUID(spec["account_id"])
-    qty = Decimal(str(spec["quantity"])); buy = Decimal(str(spec["buy_price"])); sell = Decimal(str(spec["sell_price"]))
+    qty = Decimal(str(spec["quantity"])); buy = Decimal(str(spec["buy_price"]))
+    sell = Decimal(str(spec["sell_price"])) if spec.get("sell_price") is not None else None
+    is_opt = spec.get("instrument_type") == "option"
+    inst = InstrumentType.OPTION if is_opt else InstrumentType.STOCK
+    oexp = _date.fromisoformat(spec["option_expiry"]) if spec.get("option_expiry") else None
+    ostrike = Decimal(str(spec["option_strike"])) if spec.get("option_strike") is not None else None
+    oright = (OptionRight.CALL if spec.get("option_right") == "call"
+              else OptionRight.PUT if spec.get("option_right") == "put" else None)
     now = datetime.now(timezone.utc)
     with SessionLocal() as db:
         def _o(side, price, when):
             return Order(id=uuid.uuid4(), user_id=uid, broker_account_id=acct,
-                         instrument_type=InstrumentType.STOCK, symbol=spec.get("symbol", "PNLX"),
+                         instrument_type=inst, symbol=spec.get("symbol", "PNLX"),
+                         option_expiry=oexp, option_strike=ostrike, option_right=oright,
                          side=side, order_type=OrderType.MARKET, quantity=qty,
                          filled_quantity=qty, filled_avg_price=price, status=OrderStatus.FILLED,
                          broker_order_id=f"seed-{uuid.uuid4().hex[:8]}", submitted_at=when, closed_at=when)
         db.add(_o(OrderSide.BUY, buy, now - timedelta(minutes=2)))
-        db.add(_o(OrderSide.SELL, sell, now - timedelta(minutes=1)))
+        if sell is not None:
+            db.add(_o(OrderSide.SELL, sell, now - timedelta(minutes=1)))
         db.commit()
-    out["seeded_pnl"] = str((sell - buy) * qty)
+    mult = Decimal(100) if is_opt else Decimal(1)
+    out["seeded_pnl"] = str((sell - buy) * qty * mult) if sell is not None else None
+
+elif action == "classify_occ":
+    # Expose the app's shared OCC classifier (app.brokers.alpaca, used by fills_sync) for symbols the
+    # fake activity feed can't be driven through — asserts short-ticker / dotted / odd-strike handling.
+    from app.brokers.alpaca import _looks_like_occ, _parse_occ
+    res = []
+    for s in spec.get("symbols", []):
+        p = None
+        if _looks_like_occ(s):
+            try:
+                p = _parse_occ(s)
+            except Exception:  # noqa: BLE001 — a malformed OCC-shaped string must not be an option
+                p = None
+        res.append({"symbol": s, "is_option": p is not None,
+                    "root": p[0] if p else None,
+                    "expiry": p[1].isoformat() if p else None,
+                    "strike": str(p[2]) if p else None,
+                    "right": (p[3].value if p else None)})
+    out["classified"] = res
+
+elif action == "occ_retag_probe":
+    # Migration b6f1d3a9c72e repair logic: seed a STOCK-tagged short-ticker OCC order, run the retag
+    # UPDATE, then re-run it — asserts the row becomes OPTION with fields reconstructed + symbol shortened
+    # to root, and that a second pass changes 0 rows (idempotent). SQL mirrors the migration's _RETAG.
+    from decimal import Decimal
+    from sqlalchemy import text
+    from app.models.order import Order, OrderStatus, OrderSide, OrderType, InstrumentType
+    uid = uuid.UUID(spec["user_id"]); acct = uuid.UUID(spec["account_id"])
+    sym = spec.get("symbol", "T270115C00026000")
+    retag = (
+        "UPDATE orders SET instrument_type='OPTION', "
+        "option_expiry=make_date(2000+substr(symbol,char_length(symbol)-14,2)::int,"
+        "substr(symbol,char_length(symbol)-12,2)::int,substr(symbol,char_length(symbol)-10,2)::int), "
+        "option_strike=right(symbol,8)::numeric/1000, "
+        "option_right=(CASE WHEN substr(symbol,char_length(symbol)-8,1)='C' THEN 'CALL' ELSE 'PUT' END)::option_right, "
+        "symbol=left(symbol,char_length(symbol)-15) "
+        "WHERE instrument_type='STOCK' AND symbol ~ '^[A-Z.]{1,6}[0-9]{6}[CP][0-9]{8}$'"
+    )
+    stock_occ = ("SELECT count(*) FROM orders WHERE instrument_type='STOCK' "
+                 "AND symbol ~ '^[A-Z.]{1,6}[0-9]{6}[CP][0-9]{8}$'")
+    now = datetime.now(timezone.utc)
+    with SessionLocal() as db:
+        oid = uuid.uuid4()
+        db.add(Order(id=oid, user_id=uid, broker_account_id=acct,
+                     instrument_type=InstrumentType.STOCK, symbol=sym,
+                     side=OrderSide.BUY, order_type=OrderType.MARKET, quantity=Decimal(1),
+                     filled_quantity=Decimal(1), filled_avg_price=Decimal("0.02"),
+                     status=OrderStatus.FILLED, broker_order_id=f"seed-{uuid.uuid4().hex[:8]}",
+                     submitted_at=now, closed_at=now))
+        db.commit()
+        r1 = db.execute(text(retag)).rowcount
+        r2 = db.execute(text(retag)).rowcount
+        db.commit()
+        row = db.get(Order, oid)
+        head = db.execute(text("SELECT version_num FROM alembic_version")).scalar()
+        remaining = db.execute(text(stock_occ)).scalar()
+    out.update({
+        "rows_changed_first": r1, "rows_changed_second": r2,
+        "alembic_head": head, "stock_occ_remaining": int(remaining),
+        "retagged": {"instrument_type": row.instrument_type.value, "symbol": row.symbol,
+                     "option_strike": str(row.option_strike) if row.option_strike is not None else None,
+                     "option_expiry": row.option_expiry.isoformat() if row.option_expiry else None,
+                     "option_right": row.option_right.value if row.option_right else None},
+    })
 
 elif action == "enforce_tp_sl":
     # Run the app's real per-position TP/SL enforcer using the mock adapter's positions.

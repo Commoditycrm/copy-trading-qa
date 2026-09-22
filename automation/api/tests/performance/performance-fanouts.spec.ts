@@ -80,4 +80,40 @@ test.describe('Performance fanouts — option contract descriptor', () => {
       p.cleanup();
     }
   });
+
+  test('TC-PERF-004-004 a put option fanout exposes option_right=put (renders "P") @performance @api @P2 @integration', async ({
+    api,
+    config,
+  }, info) => {
+    meta(info, 'PERF-004', ['ADMIN-002']);
+    const p = await provisionFanout(api, config, [{}]);
+    try {
+      const place = await api.post(`/api/trades?broker_account_id=${p.brokerAccountId}`, {
+        token: p.traderAccess,
+        data: {
+          instrument_type: 'option',
+          symbol: 'AG',
+          side: 'buy',
+          order_type: 'market',
+          quantity: 1,
+          option_expiry: '2026-08-14',
+          option_strike: 17,
+          option_right: 'put',
+        },
+      });
+      expect(place.status(), await place.text()).toBe(201);
+
+      const body = await (await api.get('/api/performance/fanouts', { token: p.traderAccess })).json();
+      const row = (body.fanouts as Array<Record<string, unknown>>).find(
+        (f) => String(f.symbol).toUpperCase() === 'AG',
+      );
+      expect(row, 'the AG put fanout is listed').toBeTruthy();
+      // contractLabel() renders option_right=put as "P" → "AG P $17 14 Aug 26".
+      expect(row!.instrument_type).toBe('option');
+      expect(row!.option_right).toBe('put');
+      expect(Number(row!.option_strike)).toBe(17);
+    } finally {
+      p.cleanup();
+    }
+  });
 });

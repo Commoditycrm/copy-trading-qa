@@ -1,55 +1,27 @@
-# PNL-006 — Short-ticker OCC option classification in fills-sync
+# PNL-006 — Short-ticker OCC option classification & realized-P&L multiplier
 
-Parent: **PNL-006**. Source: `backend/app/services/fills_sync.py` (`sync_account_fills` — now classifies
-via the shared `app.brokers.alpaca._looks_like_occ` / `_parse_occ` instead of a `len >= 18` gate),
-`backend/alembic/versions/f1d3a9c72e_retag_occ_options_mistagged_stock.py` (retag of rows already
-written). App fix `2f9fc46`.
+Parent: **PNL-006**. App fix `2f9fc46` / **PR #297**, migration head **b6f1d3a9c72e**. Source:
+`backend/app/services/fills_sync.py` (`sync_account_fills` — classifies via the shared
+`app.brokers.alpaca._looks_like_occ` / `_parse_occ` instead of a `len >= 18` gate),
+`backend/app/services/pnl.py` (100× multiplier keyed off `Order.instrument_type == OPTION`),
+`backend/alembic/versions/b6f1d3a9c72e_retag_occ_options_mistagged_stock.py` (repairs saved rows).
 
-**Why this matters:** Alpaca's activity feed returns the **unpadded** OCC symbol, so a 1–2 char ticker
-root is only 16–17 chars (e.g. `T251219C00025000`=16, `MU260918C01000000`=17). The old heuristic gated
-options on `len(symbol) >= 18`, so short-ticker options were dropped to **STOCK**, losing the 100×
-option contract multiplier — realized P&L rendered **100× too small** (0.32 instead of 32.0).
+**Why:** Alpaca's activity feed returns the **unpadded** OCC symbol, so a 1–2 char root is only 16–17
+chars (`T270115C00026000`=16, `VG260626C00010500`=17). The old `len >= 18` gate dropped these to STOCK,
+losing the ×100 contract multiplier — realized P&L showed **100× too small** (0.32 instead of 32.0).
+Formula: **option realized = (sell − buy) × qty × 100**; **stock realized = (sell − buy) × qty**.
 
-**Environment:** `[local-qa]`. The end-to-end fills-sync path reads the Alpaca **activity feed**, which the
-QA fake broker does not currently expose, so the full-pipeline cases are **Blocked (automation gap)** —
-they are verified at the classifier + P&L-magnitude level and are prime candidates for a backend unit test.
-**Never production.**
+**Environment:** `[local-qa]`, BROKER_MODE=fake. Realized-P&L cases seed matched BUY→SELL legs via
+`mb.seedPnl(..., instrument_type:'option')` and read `/api/positions/today-realized`; the fills-sync
+**activity feed** itself is not drivable by the fake broker, so the classifier is exercised directly via
+the grey-box `mb.classifyOcc`, and the migration via `mb.occRetagProbe`. **Never production.**
 
----
+Verified on QA (per the release): **314 mis-tagged rows → 0**.
+
+## A — Realized P&L short-ticker option multiplier (core bug) — Automated
 ```yaml
-id: TC-PNL-006-001
-title: A short-ticker OCC symbol (16–17 chars) is classified OPTION, not STOCK
-primary_func_id: PNL-006
-related_func_ids: [FILL-001, PNL-001]
-module: pnl
-test_level: L2
-test_type: Functional
-priority: P1
-risk: High
-environment: [local-qa]
-production_safe: false
-destructive: false
-automation_candidate: true
-automation_status: Blocked
-automation_ref: "classifier verified via app.brokers.alpaca._looks_like_occ/_parse_occ; full fills-sync path needs a fake activity feed"
-owner: unassigned
-status: Draft
-last_reviewed: 2026-09-22
-tags: [functional, pnl, options, regression, requires-fake-broker, P1]
-source_refs: [backend/app/services/fills_sync.py::sync_account_fills]
-evidence_requirements: ["_looks_like_occ('T251219C00025000') is True", "_parse_occ → ('T', 2025-12-19, 25, CALL)", "Order/Fill.instrument_type = OPTION"]
-```
-**Preconditions:** an Alpaca activity feed returns a fill for a short-ticker option, e.g. `T251219C00025000`
-(root `T`, 16 chars) or `MU260918C01000000` (root `MU`, 17 chars).
-**Steps:** 1) Run fills-sync for the account. 2) Inspect the written order/fill row.
-**Expected Results:** `instrument_type = OPTION`; display symbol = the root (`T` / `MU`); `option_expiry`,
-`option_strike`, `option_right` parsed from the OCC (e.g. `MU260918C01000000` → 2026-09-18, strike 1000,
-CALL). It is NOT written as STOCK. (Old behavior: STOCK, because 16–17 < 18.)
-
----
-```yaml
-id: TC-PNL-006-002
-title: Realized P&L for a short-ticker option applies the 100x contract multiplier
+id: TC-PNL-006-1A1
+title: 1-letter ticker option realized applies x100 (T call, +$32.00)
 primary_func_id: PNL-006
 related_func_ids: [PNL-001]
 module: pnl
@@ -59,84 +31,60 @@ priority: P0
 risk: Critical
 environment: [local-qa]
 production_safe: false
-destructive: false
+destructive: true
 automation_candidate: true
-automation_status: Blocked
-automation_ref: "needs fills-sync activity feed + realized-P&L read; classifier proven"
+automation_status: Automated
+automation_ref: automation/api/tests/pnl/realized-pnl-options.spec.ts (TC-PNL-006-1A1)
 owner: unassigned
 status: Draft
 last_reviewed: 2026-09-22
 tags: [integration, pnl, options, P0]
-source_refs: [backend/app/services/fills_sync.py::sync_account_fills]
-evidence_requirements: ["realized P&L = (sell-buy) * qty * 100 for an option, e.g. +32.00 not +0.32"]
+source_refs: [backend/app/services/pnl.py]
+evidence_requirements: ["buy 0.02 / sell 0.34 / qty 1 option → today-realized +$32.00 (not +$0.32)"]
 ```
-**Preconditions:** a matched BUY→SELL on a short-ticker option, e.g. buy `MU…C…` @ 0.30, sell @ 0.62, qty 1.
-**Steps:** 1) Sync both fills. 2) Read realized P&L (calendar / today-realized).
-**Expected Results:** realized P&L = `(0.62 - 0.30) * 1 * 100 = +32.00` (option multiplier applied), NOT
-`+0.32`. A regression would show the 100×-too-small figure.
+**A1** Buy 1 `T` call @ 0.02, sell @ 0.34 → **+$32.00**.
+**A2** (`TC-PNL-006-1A2`) 2-letter `VG` call, 1.00 → 1.50 → **+$50.00**.
+**A3** (`TC-PNL-006-1A3`) multi-contract `MU` ×3, 2.00 → 2.10 → **+$30.00** (0.10 × 3 × 100).
+**A4** (`TC-PNL-006-1A4`) loss: `NG` ×2, 0.50 → 0.40 → **−$20.00** (sign and ×100 both correct).
+**A5** (`TC-PNL-006-1A5`) put: `AG` put, 1.20 → 0.90 → **−$30.00**, contract tagged PUT.
+All five automated in `realized-pnl-options.spec.ts`.
 
----
+## B — Regression (nothing else changes)
 ```yaml
-id: TC-PNL-006-003
-title: A normal-length OCC symbol (>=18 chars) is still classified OPTION
+id: TC-PNL-006-1B1
+title: Long-ticker option (always worked) still computes x100
 primary_func_id: PNL-006
-related_func_ids: [FILL-001]
+related_func_ids: [PNL-001]
 module: pnl
-test_level: L2
-test_type: Functional
+test_level: L3
+test_type: Integration
 priority: P2
 risk: Medium
 environment: [local-qa]
 production_safe: false
-destructive: false
+destructive: true
 automation_candidate: true
-automation_status: Blocked
-automation_ref: "classifier verified; regression guard for the parser swap"
+automation_status: Automated
+automation_ref: automation/api/tests/pnl/realized-pnl-options.spec.ts (TC-PNL-006-1B1)
 owner: unassigned
 status: Draft
 last_reviewed: 2026-09-22
-tags: [functional, pnl, options, regression, P2]
-source_refs: [backend/app/services/fills_sync.py::sync_account_fills]
-evidence_requirements: ["_parse_occ('AAPL251219C00250000') → ('AAPL', 2025-12-19, 250, CALL)"]
+tags: [integration, pnl, options, regression, P2]
+source_refs: [backend/app/services/pnl.py]
+evidence_requirements: ["AAPL option buy 1.00 sell 1.40 qty 1 → +$40.00"]
 ```
-**Preconditions:** a fill for a long-root option, e.g. `AAPL251219C00250000` (19 chars).
-**Steps:** 1) Sync fills. 2) Inspect the row.
-**Expected Results:** `instrument_type = OPTION`, root `AAPL`, expiry/strike/right parsed — the parser swap
-did not regress the previously-working case.
+**B1** `AAPL` call 1.00 → 1.40, 1 contract → **+$40.00** — Automated.
+**B2** *(Manual — different code path)* the SAME trade placed in-app via the **live websocket** feed (not
+history) → +$40.00, unchanged. The live path never used the length gate; verify it did not regress.
+**B3** (`TC-PNL-006-1B3`, Automated) plain stock: 10 `F` shares 12.00 → 12.50 → **+$5.00**, no ×100.
+**B4** (`TC-PNL-006-2CLS`, Automated) preferred/dotted symbol `PNFP.PRB` stays STOCK — not mis-read as OCC.
+**B5** (`TC-PNL-006-2CLS`, Automated) odd strike: `VG…C00010500` → strike **10.50**, expiry & right correct.
+(B4/B5 asserted via the shared classifier in `occ-classification.spec.ts`.)
 
----
+## C — Data migration (repair of existing rows) — b6f1d3a9c72e
 ```yaml
-id: TC-PNL-006-004
-title: A genuine stock symbol stays STOCK
-primary_func_id: PNL-006
-related_func_ids: [FILL-001]
-module: pnl
-test_level: L2
-test_type: Functional
-priority: P2
-risk: Medium
-environment: [local-qa]
-production_safe: false
-destructive: false
-automation_candidate: true
-automation_status: Blocked
-automation_ref: "classifier verified: _looks_like_occ('AAPL')=False"
-owner: unassigned
-status: Draft
-last_reviewed: 2026-09-22
-tags: [functional, pnl, regression, P2]
-source_refs: [backend/app/services/fills_sync.py::sync_account_fills]
-evidence_requirements: ["_looks_like_occ('AAPL') is False → InstrumentType.STOCK"]
-```
-**Preconditions:** a fill for a plain equity symbol (`AAPL`, `MSFT`, `T`).
-**Steps:** 1) Sync fills. 2) Inspect the row.
-**Expected Results:** `instrument_type = STOCK`, display symbol uppercased; no option fields. A bare ticker
-must not be mistaken for OCC.
-
----
-```yaml
-id: TC-PNL-006-005
-title: Migration retags rows already written as STOCK that are actually short-ticker options
+id: TC-PNL-006-3MIG
+title: Retag repairs a mis-tagged short-ticker option and is idempotent
 primary_func_id: PNL-006
 related_func_ids: [MIGRATION]
 module: pnl
@@ -148,47 +96,78 @@ environment: [local-qa]
 production_safe: false
 destructive: true
 automation_candidate: true
-automation_status: Blocked
-automation_ref: "migration f1d3a9c72e — verify by seeding a mis-tagged row then upgrade head"
+automation_status: Automated
+automation_ref: automation/api/tests/pnl/occ-migration.spec.ts (TC-PNL-006-3MIG)
 owner: unassigned
 status: Draft
 last_reviewed: 2026-09-22
 tags: [data-integrity, pnl, migration, P1]
-source_refs: [backend/alembic/versions/f1d3a9c72e_retag_occ_options_mistagged_stock.py]
-evidence_requirements: ["a STOCK-tagged order whose symbol/broker_symbol is a short-ticker OCC becomes OPTION after upgrade; running the migration twice is a no-op"]
+source_refs: [backend/alembic/versions/b6f1d3a9c72e_retag_occ_options_mistagged_stock.py]
+evidence_requirements: ["alembic head b6f1d3a9c72e; seeded STOCK+OCC row → OPTION, root symbol, strike/expiry/right filled; 2nd pass 0 rows; 0 mis-tagged remain"]
 ```
-**Preconditions:** an existing order/fill row mis-tagged `instrument_type = STOCK` whose symbol is a
-short-ticker OCC (written before the fix).
-**Steps:** 1) `alembic upgrade head` (applies `f1d3a9c72e`). 2) Re-read the row. 3) Run the migration a
-second time.
-**Expected Results:** the row is retagged `OPTION` (with option fields backfilled where derivable); genuine
-stocks are untouched; the migration is idempotent (second run changes nothing).
+**C1** deployed head = `b6f1d3a9c72e` — Automated. **C2** `SELECT count(*) FROM orders WHERE
+instrument_type='STOCK' AND symbol ~ '^[A-Z.]{1,6}[0-9]{6}[CP][0-9]{8}$'` → **0** — Automated.
+**C3** a retagged row: `instrument_type=OPTION`, `symbol=MU` (root, not the long code), expiry/strike/right
+filled — Automated. **C5** re-run migration → **0 rows changed** (idempotent) — Automated.
+**C4** *(Manual)* history self-corrects: open a trader who had a mis-tagged short-ticker option before the
+release; the old $0.32-style row now shows the ×100 value (realized P&L is computed on the fly).
 
----
+## D — FIFO pairing (why we retag, not just relabel)
 ```yaml
-id: TC-PNL-006-006
-title: A malformed OCC-looking string does not crash fills-sync (skips / stays STOCK)
+id: TC-PNL-006-1D2
+title: A still-open option shows no realized P&L
 primary_func_id: PNL-006
-related_func_ids: [FILL-001]
+related_func_ids: [PNL-001]
 module: pnl
-test_level: L2
-test_type: Negative
-priority: P3
-risk: Low
+test_level: L3
+test_type: Integration
+priority: P2
+risk: Medium
 environment: [local-qa]
 production_safe: false
-destructive: false
+destructive: true
 automation_candidate: true
-automation_status: Blocked
-automation_ref: "classifier: _looks_like_occ true but _parse_occ raises → not an option"
+automation_status: Automated
+automation_ref: automation/api/tests/pnl/realized-pnl-options.spec.ts (TC-PNL-006-1D2)
 owner: unassigned
 status: Draft
 last_reviewed: 2026-09-22
-tags: [negative, pnl, robustness, P3]
-source_refs: [backend/app/services/fills_sync.py::sync_account_fills]
-evidence_requirements: ["a symbol that looks OCC-shaped but has a bad date/strike does not raise; row is handled, not dropped with a 500"]
+tags: [integration, pnl, options, P2]
+source_refs: [backend/app/services/pnl.py]
+evidence_requirements: ["a bought-not-sold option contributes no realized P&L today"]
 ```
-**Preconditions:** a fill whose symbol is OCC-shaped but unparseable (e.g. an impossible date).
-**Steps:** 1) Sync fills.
-**Expected Results:** no unhandled exception; the row is treated as non-option (STOCK) or safely skipped —
-never a crash of the whole sync pass.
+**D2** short-ticker option bought, not yet sold → **no realized P&L** — Automated.
+**D1** *(Manual — blocked: needs mixed-source legs)* one contract whose OPEN leg synced correctly
+(OPTION, root) and CLOSE leg synced via the broken path (STOCK, long code): after the fix both key on the
+same contract → they **pair** → one clean ×100 figure, no orphan lot, no doubled position.
+
+## F — End-to-end sanity vs broker
+```yaml
+id: TC-PNL-006-1F2
+title: Calendar day total reflects the option x100 value
+primary_func_id: PNL-006
+related_func_ids: [PNL-001]
+module: pnl
+test_level: L3
+test_type: Integration
+priority: P2
+risk: Medium
+environment: [local-qa]
+production_safe: false
+destructive: true
+automation_candidate: true
+automation_status: Automated
+automation_ref: automation/api/tests/pnl/realized-pnl-options.spec.ts (TC-PNL-006-1F2)
+owner: unassigned
+status: Draft
+last_reviewed: 2026-09-22
+tags: [integration, pnl, options, calendar, P2]
+source_refs: [backend/app/api/calendar.py]
+evidence_requirements: ["a day with a corrected short-ticker option shows the x100 day total (32.0, not 0.32)"]
+```
+**F2** the Calendar day total for a day containing a corrected short-ticker option reflects the ×100
+value — Automated. **F1** *(Manual — blocked: real broker)* pick one closed short-ticker option and
+compare the app's realized to the broker's realized for that trade → match within rounding.
+
+**Smoke (one line):** find any closed option on a 1–2 letter ticker (T, VG, MU, F, C, X…) and confirm its
+order-history Realized P&L is a whole-dollar figure ≈ 100× the raw price difference — not a few cents.
