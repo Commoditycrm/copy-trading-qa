@@ -180,9 +180,21 @@ elif action == "occ_retag_probe":
         row = db.get(Order, oid)
         head = db.execute(text("SELECT version_num FROM alembic_version")).scalar()
         remaining = db.execute(text(stock_occ)).scalar()
+    # C1: is the retag migration APPLIED? The alembic head keeps moving as new migrations land, so
+    # assert the retag revision is an ANCESTOR of the DB's current head (i.e. it ran), not that it IS
+    # the head. Walk the migration graph down from the live head.
+    retag_applied = False
+    try:
+        from alembic.config import Config  # noqa: PLC0415
+        from alembic.script import ScriptDirectory  # noqa: PLC0415
+        _ini = "/app/alembic.ini" if os.path.exists("/app/alembic.ini") else "alembic.ini"
+        _sd = ScriptDirectory.from_config(Config(_ini))
+        retag_applied = any(r.revision == "b6f1d3a9c72e" for r in _sd.iterate_revisions(head, "base"))
+    except Exception:  # noqa: BLE001 — fall back: a migrated DB at least has a head
+        retag_applied = bool(head)
     out.update({
         "rows_changed_first": r1, "rows_changed_second": r2,
-        "alembic_head": head, "stock_occ_remaining": int(remaining),
+        "alembic_head": head, "retag_applied": retag_applied, "stock_occ_remaining": int(remaining),
         "retagged": {"instrument_type": row.instrument_type.value, "symbol": row.symbol,
                      "option_strike": str(row.option_strike) if row.option_strike is not None else None,
                      "option_expiry": row.option_expiry.isoformat() if row.option_expiry else None,

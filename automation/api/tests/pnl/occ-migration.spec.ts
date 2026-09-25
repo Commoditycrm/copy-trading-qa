@@ -22,7 +22,9 @@ test.describe('OCC retag migration', () => {
     try {
       const r = mb.occRetagProbe(p.traderId, p.brokerAccountId, 'T270115C00026000');
 
-      expect(r.alembic_head, 'C1 — migration is the deployed head').toBe('b6f1d3a9c72e');
+      // C1 — the retag migration is applied (an ancestor of the live head; the head keeps moving
+      // as new migrations land, so we don't pin a fixed revision).
+      expect(r.retag_applied, 'C1 — retag migration b6f1d3a9c72e is applied').toBe(true);
       expect(r.rows_changed_first, 'the seeded mis-tagged row is retagged').toBeGreaterThanOrEqual(1);
 
       // C3 — fields reconstructed from the OCC symbol; symbol shortened to its root.

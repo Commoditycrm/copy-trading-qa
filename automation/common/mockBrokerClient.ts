@@ -262,6 +262,7 @@ export class MockBroker {
     rows_changed_first: number;
     rows_changed_second: number;
     alembic_head: string;
+    retag_applied: boolean;
     stock_occ_remaining: number;
     retagged: {
       instrument_type: string;
