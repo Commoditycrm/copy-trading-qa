@@ -92,7 +92,7 @@ test.describe('Positions', () => {
     }
   });
 
-  test('TC-POS-001-004 close guards — ownership 404, missing position 404, quantity bounds 422 @portfolio @api @P1 @security', async ({
+  test('TC-POS-001-004 close guards — ownership 404, missing position 404, zero-qty 422, over-qty clamps to held @portfolio @api @P1 @security', async ({
     api,
     config,
   }, info) => {
@@ -107,13 +107,15 @@ test.describe('Positions', () => {
       expect((await pos.closePosition(api, attacker.access, 'AAPL', p.brokerAccountId)).status()).toBe(404);
       // no position for that symbol
       expect((await pos.closePosition(api, p.traderAccess, 'ZZZZ', p.brokerAccountId)).status()).toBe(404);
-      // quantity bounds
+      // zero / negative quantity is still rejected
       expect((await pos.closePosition(api, p.traderAccess, 'AAPL', p.brokerAccountId, { quantity: 0 })).status()).toBe(
         422,
       );
-      expect((await pos.closePosition(api, p.traderAccess, 'AAPL', p.brokerAccountId, { quantity: 99 })).status()).toBe(
-        422,
-      );
+      // over-quantity no longer 422 — the app clamps the close to what's actually held (no oversell),
+      // so requesting 99 on a 10-held position closes the 10 and returns 200.
+      const over = await pos.closePosition(api, p.traderAccess, 'AAPL', p.brokerAccountId, { quantity: 99 });
+      expect(over.status(), await over.text()).toBe(200);
+      expect(Number((await over.json()).quantity)).toBe(10);
     } finally {
       p.cleanup();
     }
