@@ -145,4 +145,23 @@ test.describe('WF-22 Admin operations (UI, post-remediation)', () => {
       deleteUser(config, admin.email);
     }
   });
+
+  test('TC-WF-22-010 admin sees storage, Clear Logs and SMS costs on the System screen @ui @P2 @integration', async ({
+    page,
+    config,
+    api,
+  }, info) => {
+    meta(info, 'WF-22', ['ADMIN-008', 'ADMIN-009', 'ADMIN-010']);
+    const admin = await seedAdmin(api, config, page);
+    const ap = new AdminPage(page);
+    try {
+      await ap.openSystem();
+      await expect(ap.storageHeading).toBeVisible();
+      await expect(ap.logsHeading).toBeVisible();
+      await expect(ap.smsCostsHeading).toBeVisible();
+      // read-only: the screen loads; no cleanup is requested
+    } finally {
+      deleteUser(config, admin.email);
+    }
+  });
 });

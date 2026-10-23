@@ -1,7 +1,7 @@
 /**
  * Admin Operations — authz, user management + safety guards, dashboards/health, rejected-order triage +
  * redaction, load-test seed/cleanup, Redis-backed runtime config, test-SMS (log sink), and the orphaned
- * dashboard route. Admin is a DB-promoted synthetic user + a minted admin token. LOCAL-QA only.
+ * dashboard route; Admin → System storage / Clear Logs access and refusals, and the QA paper auto-trading switch. Admin is a DB-promoted synthetic user + a minted admin token. LOCAL-QA only.
  * Manual: admin/admin__operations.md. NOTE: admin mutations write NO audit rows (documented gap, 001-003).
  */
 import { test, expect, meta } from '../../../common/fixtures.js';
@@ -263,5 +263,107 @@ test.describe('Admin operations', () => {
   }, info) => {
     meta(info, 'ADMIN-007');
     expect((await api.get('/admin/dashboard')).status()).toBe(404);
+  });
+
+  test('TC-ADMIN-008-001 storage, logs, SMS-cost and paper auto-trading routes are admin-only @admin @api @P0 @security', async ({
+    api,
+    config,
+  }, info) => {
+    meta(info, 'ADMIN-008', ['ADMIN-009', 'ADMIN-010', 'ADMIN-011']);
+    const admin = await makeAdmin(api, config);
+    const trader = await auth.registerAndLogin(api, makeUser('trader'));
+    try {
+      const calls = [a.systemStorage, a.systemLogs, a.smsCosts, a.paperAutotrade];
+      for (const call of calls) {
+        expect((await call(api, admin.token)).status(), 'admin').toBe(200);
+        const denied = await call(api, trader.access);
+        expect(denied.status(), 'trader').toBe(403);
+        expect((await denied.json()).detail).toBe('admin_only');
+      }
+      expect((await api.get('/api/admin/system/storage')).status(), 'unauthenticated').toBe(401);
+      expect(
+        (
+          await a.requestLogCleanup(api, trader.access, { categories: ['app_logs'], inventory_id: 'x', confirm: true })
+        ).status(),
+      ).toBe(403);
+      expect((await a.paperAutotradeToggle(api, trader.access, true)).status()).toBe(403);
+    } finally {
+      deleteUser(config, admin.email);
+    }
+  });
+
+  test('TC-ADMIN-008-002 storage breakdown is measured or says why not — never zeros @admin @api @P1 @integration', async ({
+    api,
+    config,
+  }, info) => {
+    meta(info, 'ADMIN-008');
+    const admin = await makeAdmin(api, config);
+    try {
+      const body = await (await a.systemStorage(api, admin.token)).json();
+      if (body.status === 'unavailable') {
+        // the local stack has no host collector: an explanation, not empty figures
+        expect(body.reason).toBeTruthy();
+        expect(body.categories).toBeUndefined();
+        return;
+      }
+      expect(body.status).toBe('ok');
+      const keys = body.categories.map((c: { key: string }) => c.key);
+      for (const k of ['app_code', 'postgres', 'docker', 'app_logs', 'system_logs', 'os_other'])
+        expect(keys).toContain(k);
+      const sum = body.categories.reduce((n: number, c: { bytes: number }) => n + c.bytes, 0);
+      expect(sum, 'categories add up to the used bytes').toBe(body.filesystem.used);
+    } finally {
+      deleteUser(config, admin.email);
+    }
+  });
+
+  test('TC-ADMIN-009-001 Clear Logs refuses anything unconfirmed, ineligible or not reviewed — nothing is queued @admin @api @P0 @data-integrity', async ({
+    api,
+    config,
+  }, info) => {
+    meta(info, 'ADMIN-009');
+    const admin = await makeAdmin(api, config);
+    try {
+      const st = await (await a.systemLogs(api, admin.token)).json();
+      expect(['ok', 'unavailable']).toContain(st.status);
+      if (st.status === 'ok') {
+        expect(st.never_cleared.join(' ')).toMatch(/auth\/security logs/);
+        expect(st.never_cleared.join(' ')).toMatch(/orders, fills and audit records/);
+        for (const i of st.items) expect(['app_logs', 'docker_logs', 'rotated_system_logs']).toContain(i.category);
+      }
+      const inv = st.inventory_id ?? 'none';
+      const refused = async (body: Record<string, unknown>, why: RegExp): Promise<void> => {
+        const res = await a.requestLogCleanup(api, admin.token, body);
+        expect(res.status(), JSON.stringify(body)).toBe(409);
+        expect((await res.json()).detail).toMatch(why);
+      };
+      await refused({ categories: ['app_logs'], inventory_id: inv, confirm: false }, /confirm/i);
+      await refused({ categories: ['postgres'], inventory_id: inv, confirm: true }, /only these can be cleared/i);
+      await refused(
+        { categories: ['app_logs'], inventory_id: 'not-the-list-shown', confirm: true },
+        st.status === 'ok' ? /changed since you reviewed/i : /isn't installed/i,
+      );
+      expect(auditByActor(config, 'system.logs_cleanup_requested', admin.id), 'no request was queued').toBe(0);
+    } finally {
+      deleteUser(config, admin.email);
+    }
+  });
+
+  test('TC-ADMIN-011-001 paper auto-trading is off and the admin toggle cannot turn it on without the server switch @admin @api @P0 @safety', async ({
+    api,
+    config,
+  }, info) => {
+    meta(info, 'ADMIN-011');
+    const admin = await makeAdmin(api, config);
+    try {
+      const st = await (await a.paperAutotrade(api, admin.token)).json();
+      expect(st.env_enabled, 'local stack never sets QA_PAPER_AUTOTRADE_ENABLED').toBe(false);
+      expect(st.effective).toBe(false);
+      const res = await a.paperAutotradeToggle(api, admin.token, true);
+      expect(res.status()).toBe(403);
+      expect((await (await a.paperAutotrade(api, admin.token)).json()).toggle_on, 'unchanged').toBe(false);
+    } finally {
+      deleteUser(config, admin.email);
+    }
   });
 });

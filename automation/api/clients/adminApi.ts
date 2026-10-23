@@ -72,3 +72,15 @@ export const reconcile = (
   t: string,
   params: Record<string, string | number | boolean> = {},
 ): Promise<APIResponse> => api.post(`${P}/positions/reconcile`, { token: t, params });
+
+// Admin → System: storage breakdown, Clear Logs, SMS costs; QA paper auto-trading switch
+const S = `${P}/system`;
+export const systemStorage = (api: SafeApi, t: string): Promise<APIResponse> => api.get(`${S}/storage`, { token: t });
+export const systemLogs = (api: SafeApi, t: string): Promise<APIResponse> => api.get(`${S}/logs`, { token: t });
+export const requestLogCleanup = (api: SafeApi, t: string, body: Record<string, unknown>): Promise<APIResponse> =>
+  api.post(`${S}/logs/cleanup`, { token: t, data: body });
+export const smsCosts = (api: SafeApi, t: string): Promise<APIResponse> => api.get(`${S}/sms-costs`, { token: t });
+export const paperAutotrade = (api: SafeApi, t: string): Promise<APIResponse> =>
+  api.get(`${P}/paper-autotrade`, { token: t });
+export const paperAutotradeToggle = (api: SafeApi, t: string, on: boolean): Promise<APIResponse> =>
+  api.post(`${P}/paper-autotrade/toggle`, { token: t, data: { on } });
