@@ -1,7 +1,8 @@
-# ADMIN-001..007 — Admin operations
+# ADMIN-001..011 — Admin operations
 
 Parents **ADMIN-001** (users), **ADMIN-002** (dashboards), **ADMIN-003** (rejected), **ADMIN-004** (load-test),
-**ADMIN-005** (config; sms/test = 001), **ADMIN-007** (orphaned dashboard). Endpoints `/api/admin/*`
+**ADMIN-005** (config; sms/test = 001), **ADMIN-007** (orphaned dashboard), **ADMIN-008** (storage breakdown),
+**ADMIN-009** (Clear Logs), **ADMIN-011** (QA paper auto-trading switch). Endpoints `/api/admin/*`
 (all `require_admin`). Source: `backend/app/api/admin.py`, `backend/app/services/platform_config.py`,
 `backend/app/services/excel_export.py`, `frontend/app/admin/**`.
 
@@ -276,3 +277,111 @@ evidence_requirements: [A user promoted to the shipped lowercase 'admin' label m
 ```
 **Steps:** 1) Promote a synthetic user to the shipped lowercase `admin` label. 2) GET /api/admin/stats with a valid admin token.
 **Expected Results (defect):** 500 Internal Server Error — the ORM cannot map the lowercase label to `UserRole`. **Correct behavior would be 200.** QA remediation (add the correct `ADMIN` label) unblocks the rest of the admin suite; the app must ship `ALTER TYPE user_role RENAME VALUE 'admin' TO 'ADMIN'`. See DEF-ADMIN-001.
+
+---
+```yaml
+id: TC-ADMIN-008-001
+title: Storage, logs, SMS-cost and paper auto-trading routes are admin-only
+primary_func_id: ADMIN-008
+related_func_ids: [ADMIN-009, ADMIN-010, ADMIN-011]
+module: admin
+test_level: L2
+test_type: Security
+priority: P0
+risk: High
+environment: [local-qa, qa]
+production_safe: false
+destructive: false
+automation_candidate: true
+automation_status: Automated
+automation_ref: automation/api/tests/admin/admin.spec.ts
+owner: unassigned
+status: Draft
+last_reviewed: 2026-10-23
+tags: [api, admin, security, P0]
+source_refs: [backend/app/api/system.py (storage, logs, logs/cleanup), backend/app/api/sms_costs.py, backend/app/api/paper_autotrade.py]
+evidence_requirements: [Admin → 200; trader → 403 admin_only; unauthenticated → 401; trader cleanup request and toggle → 403]
+```
+**Steps:** 1) Call each route as admin, trader and unauthenticated. 2) Trader POSTs a cleanup request and the paper toggle.
+**Expected Results:** Only admins reach them; non-admin writes are refused before any effect.
+
+---
+```yaml
+id: TC-ADMIN-008-002
+title: Storage breakdown is measured or explains why not
+primary_func_id: ADMIN-008
+related_func_ids: []
+module: admin
+test_level: L2
+test_type: Functional
+priority: P1
+risk: Medium
+environment: [local-qa, qa]
+production_safe: false
+destructive: false
+automation_candidate: true
+automation_status: Automated
+automation_ref: automation/api/tests/admin/admin.spec.ts
+owner: unassigned
+status: Draft
+last_reviewed: 2026-10-23
+tags: [api, admin, P1]
+source_refs: [backend/app/services/host_storage.py::read_storage, scripts/host_storage.py]
+evidence_requirements: [Without the host collector: status unavailable + reason, no categories; with it: data/code/infrastructure/log categories that add up to used bytes]
+```
+**Steps:** 1) GET /api/admin/system/storage.
+**Expected Results:** Never zeros: either an explanation or categories summing exactly to the filesystem's used bytes.
+
+---
+```yaml
+id: TC-ADMIN-009-001
+title: Clear Logs refuses unconfirmed, ineligible or unreviewed requests
+primary_func_id: ADMIN-009
+related_func_ids: []
+module: admin
+test_level: L2
+test_type: Negative
+priority: P0
+risk: High
+environment: [local-qa, qa]
+production_safe: false
+destructive: false
+automation_candidate: true
+automation_status: Automated
+automation_ref: automation/api/tests/admin/admin.spec.ts
+owner: unassigned
+status: Draft
+last_reviewed: 2026-10-23
+tags: [api, admin, data-integrity, P0]
+source_refs: [backend/app/services/log_cleanup.py::request_cleanup, scripts/host_log_cleanup.py]
+evidence_requirements: [409 for confirm=false, a non-log category, a stale/unknown inventory id; no system.logs_cleanup_requested audit row; protected logs listed as never cleared]
+```
+**Steps:** 1) GET /api/admin/system/logs. 2) POST /logs/cleanup unconfirmed, with category postgres, with a wrong inventory id.
+**Expected Results:** Every request is refused and nothing is queued; only operational log categories are ever listed.
+
+---
+```yaml
+id: TC-ADMIN-011-001
+title: Paper auto-trading cannot be switched on without the server switch
+primary_func_id: ADMIN-011
+related_func_ids: []
+module: admin
+test_level: L2
+test_type: Safety
+priority: P0
+risk: High
+environment: [local-qa]
+production_safe: false
+destructive: false
+automation_candidate: true
+automation_status: Automated
+automation_ref: automation/api/tests/admin/admin.spec.ts
+owner: unassigned
+status: Draft
+last_reviewed: 2026-10-23
+tags: [api, admin, safety, P0]
+source_refs: [backend/app/api/paper_autotrade.py::toggle, backend/app/services/paper_autotrade.py]
+evidence_requirements: [env_enabled false and effective false on the local stack; toggle on → 403; toggle_on unchanged]
+```
+**Steps:** 1) GET /api/admin/paper-autotrade. 2) POST /toggle {on: true}.
+**Expected Results:** Refused; no account can be auto-traded from the admin page alone. Live paper orders are covered by the app's unit tests, not here.
