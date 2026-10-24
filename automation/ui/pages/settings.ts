@@ -37,6 +37,12 @@ export class SettingsPage extends BasePage {
     await this.multiplier.selectOption(String(value));
     await this.saveMultiplier.click();
   }
+
+  // Notification preferences: the WhatsApp opt-in and the form's own Save (next to the phone input).
+  readonly whatsappOptIn = this.page.getByRole('checkbox', { name: 'WhatsApp rejected-trade alerts' });
+  readonly saveNotifications = this.whatsappOptIn
+    .locator('xpath=ancestor::*[.//button[normalize-space()="Save"]][1]')
+    .getByRole('button', { name: 'Save', exact: true });
 }
 
 /** /subscribers — trader-side follow-request approvals (FollowRequestsPanel). */
