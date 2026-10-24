@@ -14,7 +14,9 @@ import * as follow from '../../clients/followApi.js';
 import { provisionFanout } from '../trading/helpers.js';
 import { MockBroker } from '../../../common/mockBrokerClient.js';
 import { notifCount, childForUser } from '../../../common/tradingSetup.js';
-import { deleteUser } from '../../../common/localAdmin.js';
+import { deleteUser, promoteToAdmin } from '../../../common/localAdmin.js';
+import { mintAccess } from '../../../common/jwt.js';
+import * as admin from '../../clients/adminApi.js';
 import { smsAttempted } from '../../../common/smsSink.js';
 
 const childStatus = (cfg: any, parent: string, user: string) => childForUser(cfg, parent, user)?.status ?? 'none';
@@ -271,6 +273,82 @@ test.describe('Comms — notifications / follow / SMS gating', () => {
       // consent off → no SMS to that phone
       expect(smsAttempted(phone), 'consent off → no SMS').toBe(false);
     } finally {
+      p.cleanup();
+    }
+  });
+
+  test('TC-WA-001-001 WhatsApp opt-in needs a phone, records consent, clears it on opt-out and leaves SMS alone @comms @api @P1 @data-integrity', async ({
+    api,
+    config,
+  }, info) => {
+    meta(info, 'WA-001', ['SMS-001']);
+    const u = makeUser('subscriber');
+    const acct = await auth.registerAndLogin(api, u);
+    try {
+      const noPhone = await auth.updateMe(api, acct.access, { whatsapp_notifications_enabled: true });
+      expect(noPhone.status()).toBe(422);
+      expect((await noPhone.json()).detail).toBe('whatsapp_needs_phone');
+
+      await auth.updateMe(api, acct.access, { phone: '+14155550171', sms_notifications_enabled: false });
+      const on = await (await auth.updateMe(api, acct.access, { whatsapp_notifications_enabled: true })).json();
+      expect(on.whatsapp_notifications_enabled).toBe(true);
+      expect(Date.parse(on.whatsapp_opt_in_at), 'consent time recorded').not.toBeNaN();
+      expect(on.sms_notifications_enabled, 'SMS preference independent').toBe(false);
+
+      const off = await (await auth.updateMe(api, acct.access, { whatsapp_notifications_enabled: false })).json();
+      expect(off.whatsapp_notifications_enabled).toBe(false);
+      expect(off.whatsapp_opt_in_at).toBeNull();
+    } finally {
+      deleteUser(config, u.email);
+    }
+  });
+
+  test('TC-WA-001-002 changing the phone number withdraws WhatsApp consent @comms @api @P1 @security', async ({
+    api,
+    config,
+  }, info) => {
+    meta(info, 'WA-001');
+    const u = makeUser('subscriber');
+    const acct = await auth.registerAndLogin(api, u);
+    try {
+      await auth.updateMe(api, acct.access, { phone: '+14155550172', whatsapp_notifications_enabled: true });
+      const moved = await (await auth.updateMe(api, acct.access, { phone: '+14155550173' })).json();
+      expect(moved.whatsapp_notifications_enabled).toBe(false);
+      expect(moved.whatsapp_opt_in_at).toBeNull();
+    } finally {
+      deleteUser(config, u.email);
+    }
+  });
+
+  test('TC-WA-001-003 with WhatsApp off (the default) a rejection records no WhatsApp message @comms @api @P1 @integration', async ({
+    api,
+    config,
+  }, info) => {
+    meta(info, 'WA-001', ['ADMIN-003']);
+    const mb = new MockBroker(config);
+    await mb.resetScenario();
+    const p = await provisionFanout(api, config, [{}]);
+    const adminUser = makeUser('subscriber');
+    const adminAcct = await auth.registerAndLogin(api, adminUser);
+    promoteToAdmin(config, adminUser.email);
+    const adminToken = mintAccess(config, adminAcct.id, 'admin');
+    try {
+      const sub = p.subs[0]!;
+      await auth.updateMe(api, p.subAccess[0]!, { phone: '+14155550174', whatsapp_notifications_enabled: true });
+      await mb.setPlaceOrderResult(sub.account_id!, 'reject');
+      const entry = await (
+        await trades.placeOrder(api, p.traderAccess, p.brokerAccountId, marketOrder('AAPL', 5))
+      ).json();
+      await expect
+        .poll(() => childForUser(config, entry.id, sub.user_id)?.status ?? 'none', { timeout: 20000 })
+        .toBe('rejected');
+      const body = await (await admin.rejectedOrders(api, adminToken, { role: 'subscriber', limit: 50 })).json();
+      expect(body.whatsapp_tracking_enabled).toBe(false);
+      const mine = body.rejections.filter((r: { user_email: string }) => r.user_email === sub.email);
+      expect(mine.length).toBeGreaterThanOrEqual(1);
+      for (const r of mine) expect(r.whatsapp, 'nothing recorded while the flag is off').toBeNull();
+    } finally {
+      deleteUser(config, adminUser.email);
       p.cleanup();
     }
   });
